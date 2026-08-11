@@ -28,7 +28,6 @@
     const getProfile = async (authUser) => {
         if (!authUser) return null;
         const profile = requireData(await client.from('sim_profiles').select('*').eq('user_id', authUser.id).maybeSingle());
-        if (!profile?.active) return null;
         return normalizeProfile(profile, authUser.email || '');
     };
 
@@ -37,7 +36,10 @@
         if (error) throw error;
         if (!data.session?.user) return null;
         const profile = await getProfile(data.session.user);
-        if (!profile) await client.auth.signOut();
+        if (!profile?.active) {
+            await client.auth.signOut();
+            return null;
+        }
         return profile;
     };
 
@@ -45,16 +47,52 @@
         const { data, error } = await client.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
         if (error) throw new Error('E-mail ou senha inválidos.');
         const profile = await getProfile(data.user);
-        if (!profile) {
+        if (!profile?.active) {
             await client.auth.signOut();
-            throw new Error('Sua conta não tem acesso ativo ao SIM.');
+            throw new Error(profile ? 'Seu cadastro aguarda aprovação de um administrador.' : 'Sua conta não tem acesso ao SIM.');
         }
         return profile;
+    };
+
+    const signUp = async ({ displayName, email, password }) => {
+        const normalizedName = String(displayName || '').trim();
+        const normalizedEmail = String(email || '').trim().toLowerCase();
+        if (!normalizedName || normalizedName.length > 120) throw new Error('Informe um nome válido.');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error('Informe um e-mail válido.');
+        if (String(password || '').length < 12) throw new Error('A senha deve ter pelo menos 12 caracteres.');
+
+        const redirectPath = `${window.location.origin}${window.location.pathname}`;
+        const { data, error } = await client.auth.signUp({
+            email: normalizedEmail,
+            password,
+            options: {
+                emailRedirectTo: redirectPath,
+                data: { display_name: normalizedName, group_id: 'residencial' }
+            }
+        });
+        if (error) throw new Error(error.message || 'Não foi possível enviar o cadastro.');
+        if (data.session) await client.auth.signOut();
+        return { emailConfirmationRequired: !data.session };
     };
 
     const listProfiles = async () => {
         const rows = requireData(await client.from('sim_profiles').select('*').eq('active', true).order('display_name')) || [];
         return rows.map(row => normalizeProfile(row));
+    };
+
+    const listPendingProfiles = async () => {
+        const [profileResult, requestResult] = await Promise.all([
+            client.from('sim_profiles').select('*').eq('active', false).order('created_at'),
+            client.from('sim_registration_requests').select('user_id,email,requested_at').eq('status', 'pending').order('requested_at')
+        ]);
+        const rows = requireData(profileResult) || [];
+        const requests = requireData(requestResult) || [];
+        const requestMap = new Map(requests.map(request => [request.user_id, request]));
+        return rows.map(row => ({
+            ...normalizeProfile(row),
+            email: requestMap.get(row.user_id)?.email || '',
+            requestedAt: requestMap.get(row.user_id)?.requested_at || row.created_at
+        }));
     };
 
     const listMessages = async (profiles = []) => {
@@ -156,11 +194,27 @@
         return data.user;
     };
 
+    const approveUser = async ({ userId, groupId }) => {
+        const { data, error } = await client.functions.invoke('sim-admin-users', {
+            body: { action: 'approve', userId, groupId }
+        });
+        if (error) {
+            let message = 'Não foi possível aprovar o usuário.';
+            try {
+                const body = await error.context?.json();
+                if (body?.error) message = body.error;
+            } catch (_) { /* response body may already be consumed */ }
+            throw new Error(message);
+        }
+        return data.user;
+    };
+
     const subscribe = (refresh) => {
         const channel = client.channel('sim-workspace')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_messages' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_message_receipts' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_documents' }, refresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_profiles' }, refresh)
             .subscribe();
         return () => client.removeChannel(channel);
     };
@@ -173,8 +227,8 @@
     };
 
     window.SIMBackend = {
-        getCurrentUser, signIn, signOut: () => client.auth.signOut(), onAuthStateChange,
-        listProfiles, listMessages, sendMessage, confirmMessage, deleteMessages,
-        listDocuments, uploadDocument, openDocument, createUser, subscribe
+        getCurrentUser, signIn, signUp, signOut: () => client.auth.signOut(), onAuthStateChange,
+        listProfiles, listPendingProfiles, listMessages, sendMessage, confirmMessage, deleteMessages,
+        listDocuments, uploadDocument, openDocument, createUser, approveUser, subscribe
     };
 })();

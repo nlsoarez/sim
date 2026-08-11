@@ -6,7 +6,8 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 
 - Login real por e-mail e senha (Supabase Auth).
 - Perfis `admin` e `user`, protegidos por Row Level Security (RLS).
-- Administração de usuários pelo próprio portal. Apenas administradores podem criar contas.
+- Cadastro público com validação obrigatória por um administrador.
+- Administração de usuários pelo próprio portal. Apenas administradores podem aprovar contas ou criar acesso imediato.
 - Depósito privado para planilhas de escalonamento e PDFs, com limite de 20 MB.
 - Central de mensagens persistente, com envio para todos, grupo ou usuário.
 - Confirmação de leitura e relatório imprimível/PDF para administradores.
@@ -16,7 +17,9 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 
 As contas já existentes de Nelson e Kelly foram associadas ao SIM como administradores. As senhas continuam gerenciadas pelo Supabase e não ficam no repositório.
 
-Depois de entrar, um administrador pode abrir **Administração → Gerenciar usuários** e criar as demais contas. A senha inicial precisa ter pelo menos 12 caracteres.
+Na tela inicial, a opção **Cadastrar** cria uma solicitação com nome, e-mail e senha. A senha precisa ter pelo menos 12 caracteres. O solicitante continua sem acesso aos arquivos e mensagens até a validação administrativa. Ao aprovar, o administrador também valida o e-mail da conta.
+
+Depois de entrar, um administrador abre **Administração → Gerenciar usuários** e usa **Aprovar** na seção **Cadastros aguardando validação**. O administrador também pode criar uma conta com acesso imediato pelo formulário da mesma página.
 
 ## Publicar planilhas
 
@@ -27,7 +30,7 @@ Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 ## Backend e segurança
 
 - Projeto Supabase: `divisao-equipe-madrugada` (`aaxdcpftynjphzitigrv`).
-- Migração: `supabase/migrations/20260811075616_sim_multiuser_backend.sql`.
+- Migrações versionadas em `supabase/migrations/`, incluindo o backend multiusuário, cadastro com aprovação e índices relacionados.
 - Função de criação de usuários: `supabase/functions/sim-admin-users/index.ts`.
 - A chave presente no JavaScript é uma chave **publicável**, própria para clientes web. Nenhuma chave secreta ou `service_role` é enviada ao navegador.
 - O bucket é privado. Download, upload e metadados dependem de sessão válida e políticas RLS.

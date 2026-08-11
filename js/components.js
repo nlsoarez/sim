@@ -11,32 +11,38 @@ const AppCard = ({ item, onFolderOpen }) => {
 };
 
 const LoginPage = ({ onLogin }) => {
-    const [username, setUsername] = React.useState('');
+    const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
     const [error, setError] = React.useState('');
-    const handleSubmit = (e) => {
+    const [loading, setLoading] = React.useState(false);
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const loginName = normalizeText(username.trim());
-        if (!loginName || !password.trim()) {
-            setError('Informe login e senha');
+        if (!email.trim() || !password) {
+            setError('Informe e-mail e senha');
             return;
         }
-        const user = USERS.find(u => normalizeText(u.username) === loginName);
-        if (user) onLogin(user);
-        else setError('Usuário não encontrado');
+        setLoading(true);
+        setError('');
+        try { await onLogin(email, password); }
+        catch (loginError) { setError(loginError.message || 'Não foi possível entrar.'); }
+        finally { setLoading(false); }
     };
     return React.createElement('div', { className: 'min-h-screen flex items-center justify-center p-5', style: { background: '#d1d5db' } },
         React.createElement('form', { onSubmit: handleSubmit, className: 'login-card p-8 w-full max-w-sm' }, [
             React.createElement('div', { key: 'logo', className: 'mx-auto w-16 h-16 flex items-center justify-center mb-4' }, React.createElement('img', { className: 'login-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),
             React.createElement('h1', { key: 'title', className: 'text-2xl font-bold text-center text-red-700 mb-1' }, 'SIM'),
             React.createElement('p', { key: 'sub', className: 'text-center text-sm text-gray-500 mb-6' }, 'Sistema Integrado Madrugada'),
-            React.createElement('input', { key: 'user', type: 'text', className: 'search-input mb-3', placeholder: 'Login', value: username, onChange: (e) => setUsername(e.target.value) }),
-            React.createElement('input', { key: 'pass', type: 'password', className: 'search-input mb-3', placeholder: 'Senha', value: password, onChange: (e) => setPassword(e.target.value) }),
+            React.createElement('input', { key: 'email', type: 'email', autoComplete: 'username', className: 'search-input mb-3', placeholder: 'E-mail corporativo', value: email, onChange: (e) => setEmail(e.target.value) }),
+            React.createElement('input', { key: 'pass', type: 'password', autoComplete: 'current-password', className: 'search-input mb-3', placeholder: 'Senha', value: password, onChange: (e) => setPassword(e.target.value) }),
             error && React.createElement('p', { key: 'error', className: 'text-sm text-red-600 mb-3 text-center' }, error),
-            React.createElement('button', { key: 'btn', type: 'submit', className: 'w-full bg-red-600 hover:bg-red-700 text-white font-semibold rounded-2xl py-3 transition-all' }, 'Entrar')
+            React.createElement('button', { key: 'btn', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? 'Entrando...' : 'Entrar')
         ])
     );
 };
+
+const LoadingPage = ({ message = 'Carregando o SIM...' }) => React.createElement('div', {
+    className: 'min-h-screen flex items-center justify-center p-5', style: { background: '#d1d5db' }
+}, React.createElement('div', { className: 'login-card p-8 text-center text-gray-600' }, message));
 
 const CategoryTabs = ({ categories, activeCategory, onSelect }) => {
     return React.createElement('div', { className: 'category-tabs scrollbar-hide' },
@@ -239,4 +245,167 @@ const ContactsPage = ({ contactStore, onBack }) => {
                 (usesAreaTabs ? React.createElement('div', { key: 'panel', className: 'contact-tab-panel' }, renderTable(visibleContacts, `${activeCluster}-${activeArea || 'todos'}`)) : renderTable(visibleContacts, activeCluster))
         ]
     ]);
+};
+
+const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen, onBack }) => {
+    const [openingId, setOpeningId] = React.useState('');
+    const [error, setError] = React.useState('');
+    const openFile = async (document) => {
+        setOpeningId(document.id);
+        setError('');
+        try { await onOpen(document); }
+        catch (openError) { setError(openError.message || 'Não foi possível abrir o arquivo.'); }
+        finally { setOpeningId(''); }
+    };
+    const formatSize = (bytes) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
+    return React.createElement('div', { className: 'tray-inner documents-page fade-in' }, [
+        React.createElement('div', { key: 'header', className: 'page-heading-row' }, [
+            React.createElement('div', { key: 'title-wrap', className: 'flex items-center gap-3' }, [
+                React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
+                React.createElement('div', { key: 'copy' }, [
+                    React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-gray-700' }, 'Escalas e documentos'),
+                    React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Arquivos publicados pela administração para toda a equipe.')
+                ])
+            ]),
+            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'primary-action-btn' }, 'Anexar planilha')
+        ]),
+        uploadStatus && React.createElement('p', { key: 'status', className: uploadStatus.type === 'error' ? 'system-alert error' : 'system-alert success' }, uploadStatus.text),
+        error && React.createElement('p', { key: 'error', className: 'system-alert error' }, error),
+        documents.length === 0 ? React.createElement('div', { key: 'empty', className: 'document-empty' }, 'Nenhuma escala foi publicada ainda.') :
+            React.createElement('div', { key: 'list', className: 'document-list' }, documents.map(document => React.createElement('article', { key: document.id, className: 'document-card' }, [
+                React.createElement('div', { key: 'icon', className: 'document-file-icon', 'aria-hidden': 'true' }, '↧'),
+                React.createElement('div', { key: 'copy', className: 'document-copy' }, [
+                    React.createElement('h3', { key: 'title' }, document.title),
+                    React.createElement('p', { key: 'meta' }, `${document.file_name} • ${formatSize(document.size_bytes)} • ${new Date(document.created_at).toLocaleString('pt-BR')}`)
+                ]),
+                React.createElement('button', { key: 'open', type: 'button', disabled: openingId === document.id, onClick: () => openFile(document), className: 'secondary-action-btn' }, openingId === document.id ? 'Abrindo...' : 'Abrir')
+            ])))
+    ]);
+};
+
+const UserAdminPage = ({ profiles, onCreate, onBack }) => {
+    const [form, setForm] = React.useState({ displayName: '', email: '', password: '', role: 'user', groupId: 'residencial' });
+    const [status, setStatus] = React.useState(null);
+    const [loading, setLoading] = React.useState(false);
+    const update = (field) => (event) => setForm(previous => ({ ...previous, [field]: event.target.value }));
+    const submit = async (event) => {
+        event.preventDefault();
+        setLoading(true);
+        setStatus(null);
+        try {
+            await onCreate(form);
+            setForm({ displayName: '', email: '', password: '', role: 'user', groupId: 'residencial' });
+            setStatus({ type: 'success', text: 'Usuário criado. Entregue o e-mail e a senha inicial por um canal seguro.' });
+        } catch (createError) {
+            setStatus({ type: 'error', text: createError.message || 'Não foi possível criar o usuário.' });
+        } finally { setLoading(false); }
+    };
+    return React.createElement('div', { className: 'tray-inner user-admin-page fade-in' }, [
+        React.createElement('div', { key: 'nav', className: 'flex items-center gap-3 mb-5' }, [
+            React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
+            React.createElement('div', { key: 'copy' }, [
+                React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-gray-700' }, 'Usuários do SIM'),
+                React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Crie contas individuais; senhas nunca são armazenadas no código.')
+            ])
+        ]),
+        React.createElement('form', { key: 'form', onSubmit: submit, className: 'user-create-form' }, [
+            React.createElement('input', { key: 'name', required: true, maxLength: 120, className: 'search-input', placeholder: 'Nome completo', value: form.displayName, onChange: update('displayName') }),
+            React.createElement('input', { key: 'email', required: true, type: 'email', autoComplete: 'off', className: 'search-input', placeholder: 'E-mail corporativo', value: form.email, onChange: update('email') }),
+            React.createElement('input', { key: 'password', required: true, minLength: 12, type: 'password', autoComplete: 'new-password', className: 'search-input', placeholder: 'Senha inicial (mínimo 12 caracteres)', value: form.password, onChange: update('password') }),
+            React.createElement('select', { key: 'role', className: 'search-input', value: form.role, onChange: update('role') }, [
+                React.createElement('option', { key: 'user', value: 'user' }, 'Usuário'),
+                React.createElement('option', { key: 'admin', value: 'admin' }, 'Administrador')
+            ]),
+            React.createElement('input', { key: 'group', required: true, maxLength: 80, className: 'search-input', placeholder: 'Grupo', value: form.groupId, onChange: update('groupId') }),
+            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn' }, loading ? 'Criando...' : 'Criar usuário')
+        ]),
+        status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
+        React.createElement('div', { key: 'members', className: 'member-list' }, profiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
+            React.createElement('span', { key: 'name' }, profile.displayName),
+            React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Admin' : 'Usuário'),
+            React.createElement('span', { key: 'group', className: 'member-group' }, profile.group)
+        ])))
+    ]);
+};
+
+const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, onClose }) => {
+    const [target, setTarget] = React.useState('todos');
+    const [title, setTitle] = React.useState('');
+    const [text, setText] = React.useState('');
+    const [status, setStatus] = React.useState(null);
+    const [loadingId, setLoadingId] = React.useState('');
+    const [selected, setSelected] = React.useState([]);
+    const [deleteMode, setDeleteMode] = React.useState(false);
+    const profileMap = new Map(profiles.map(profile => [profile.id, profile]));
+    const groups = Array.from(new Set(profiles.map(profile => profile.group).filter(Boolean)));
+    const targetLabel = (value) => value === 'todos' ? 'Todos' : (String(value).startsWith('group:') ? `Grupo ${String(value).slice(6)}` : (profileMap.get(value)?.displayName || 'Usuário'));
+    const send = async () => {
+        if (!title.trim()) return setStatus({ type: 'error', text: 'Informe o título da mensagem.' });
+        setLoadingId('send'); setStatus(null);
+        try {
+            await onSend({ target, title, text });
+            setTitle(''); setText('');
+            setStatus({ type: 'success', text: 'Mensagem enviada e armazenada com sucesso.' });
+        } catch (sendError) { setStatus({ type: 'error', text: sendError.message || 'Falha ao enviar.' }); }
+        finally { setLoadingId(''); }
+    };
+    const confirm = async (message) => {
+        setLoadingId(message.id); setStatus(null);
+        try { await onConfirm(message.id); }
+        catch (confirmError) { setStatus({ type: 'error', text: confirmError.message || 'Falha ao confirmar.' }); }
+        finally { setLoadingId(''); }
+    };
+    const removeSelected = async () => {
+        setLoadingId('delete'); setStatus(null);
+        try { await onDelete(selected); setSelected([]); setDeleteMode(false); }
+        catch (deleteError) { setStatus({ type: 'error', text: deleteError.message || 'Falha ao apagar.' }); }
+        finally { setLoadingId(''); }
+    };
+    const exportPdf = () => {
+        const escape = (value) => String(value || '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        const rows = messages.flatMap(message => message.readBy.map(receipt => `<tr><td>${escape(receipt.displayName)}</td><td>${escape(receipt.date)}</td><td>${escape(message.title)}</td></tr>`)).join('');
+        const report = window.open('', '_blank');
+        if (!report) return;
+        report.document.write(`<html><head><title>Confirmações SIM</title><style>body{font-family:Arial;padding:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:9px;text-align:left}th{background:#fee2e2}</style></head><body><h1>Confirmações de leitura</h1><table><thead><tr><th>Usuário</th><th>Data</th><th>Mensagem</th></tr></thead><tbody>${rows || '<tr><td colspan="3">Nenhuma confirmação.</td></tr>'}</tbody></table></body></html>`);
+        report.document.close(); report.focus(); report.print();
+    };
+    return React.createElement('div', { className: 'modal-overlay', onClick: event => event.target === event.currentTarget && onClose() },
+        React.createElement('div', { className: 'modal-card p-5' }, [
+            React.createElement('div', { key: 'header', className: 'flex items-center justify-between mb-4' }, [
+                React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-red-700' }, 'Central de Mensagens'),
+                React.createElement('div', { key: 'actions', className: 'modal-header-actions' }, [
+                    user.role === 'admin' && React.createElement('button', { key: 'pdf', type: 'button', onClick: exportPdf, className: 'secondary-action-btn' }, 'PDF'),
+                    user.role === 'admin' && React.createElement('button', { key: 'delete', type: 'button', onClick: () => { setDeleteMode(!deleteMode); setSelected([]); }, className: 'secondary-action-btn' }, deleteMode ? 'Cancelar' : 'Apagar'),
+                    React.createElement('button', { key: 'close', type: 'button', onClick: onClose, className: 'header-btn', 'aria-label': 'Fechar' }, '×')
+                ])
+            ]),
+            status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
+            user.role === 'admin' && React.createElement('section', { key: 'composer', className: 'message-composer' }, [
+                React.createElement('h3', { key: 'heading' }, 'Enviar mensagem'),
+                React.createElement('select', { key: 'target', className: 'search-input', value: target, onChange: event => setTarget(event.target.value) }, [
+                    React.createElement('option', { key: 'all', value: 'todos' }, 'Todos os usuários'),
+                    ...groups.map(group => React.createElement('option', { key: `group-${group}`, value: `group:${group}` }, `Grupo ${group}`)),
+                    ...profiles.map(profile => React.createElement('option', { key: profile.id, value: profile.id }, profile.displayName))
+                ]),
+                React.createElement('input', { key: 'title', maxLength: 160, className: 'search-input', placeholder: 'Título', value: title, onChange: event => setTitle(event.target.value) }),
+                React.createElement('textarea', { key: 'body', maxLength: 5000, rows: 3, className: 'search-input', placeholder: 'Mensagem', value: text, onChange: event => setText(event.target.value) }),
+                React.createElement('button', { key: 'send', type: 'button', disabled: loadingId === 'send', onClick: send, className: 'primary-action-btn' }, loadingId === 'send' ? 'Enviando...' : 'Enviar mensagem')
+            ]),
+            user.role === 'admin' && deleteMode && React.createElement('div', { key: 'delete-bar', className: 'delete-bar' }, [
+                React.createElement('span', { key: 'count' }, `${selected.length} selecionada(s)`),
+                React.createElement('button', { key: 'confirm', type: 'button', disabled: !selected.length || loadingId === 'delete', onClick: removeSelected, className: 'delete-confirm-btn' }, 'Apagar selecionadas')
+            ]),
+            React.createElement('div', { key: 'list', className: 'message-list space-y-3 overflow-y-auto' }, messages.length === 0 ? React.createElement('p', { className: 'text-center text-gray-500 py-8' }, 'Nenhuma mensagem disponível.') : messages.map(message => {
+                const ownReceipt = message.readBy.find(receipt => receipt.username === user.id);
+                return React.createElement('article', { key: message.id, className: 'message-detail-body border rounded-2xl p-4' }, [
+                    user.role === 'admin' && deleteMode && React.createElement('input', { key: 'check', type: 'checkbox', checked: selected.includes(message.id), onChange: () => setSelected(previous => previous.includes(message.id) ? previous.filter(id => id !== message.id) : [...previous, message.id]) }),
+                    React.createElement('p', { key: 'meta', className: 'text-xs text-gray-500' }, `${message.date} • De: ${message.from} • Para: ${targetLabel(message.to)}`),
+                    React.createElement('h3', { key: 'title', className: 'font-bold mt-1' }, message.title),
+                    message.text && React.createElement('p', { key: 'body', className: 'text-sm mt-1' }, message.text),
+                    user.role === 'admin' ? React.createElement('div', { key: 'receipts', className: 'message-receipts' }, message.readBy.length ? message.readBy.map(receipt => React.createElement('p', { key: receipt.username }, `Confirmada por ${receipt.displayName} em ${receipt.date}`)) : React.createElement('p', null, 'Nenhuma confirmação ainda.')) :
+                        (ownReceipt ? React.createElement('p', { key: 'done', className: 'read-confirmed' }, `Recebida e lida em ${ownReceipt.date}`) : React.createElement('button', { key: 'confirm', type: 'button', disabled: loadingId === message.id, onClick: () => confirm(message), className: 'confirm-read-btn mt-3' }, loadingId === message.id ? 'Confirmando...' : 'Confirmar leitura'))
+                ]);
+            }))
+        ])
+    );
 };

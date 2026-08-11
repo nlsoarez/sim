@@ -1,16 +1,5 @@
 const lucide = window.lucide;
 
-const USERS = [
-    { username: 'Kelly Lira', role: 'admin', group: 'residencial', displayName: 'Kelly Lira' },
-    { username: 'Nelson Leandro', role: 'admin', group: 'residencial', displayName: 'Nelson Leandro' },
-    { username: 'Cristiane Hermógenes', role: 'user', group: 'residencial', displayName: 'Cristiane Hermógenes' },
-    { username: 'Raissa Cardoso', role: 'user', group: 'residencial', displayName: 'Raissa Cardoso' },
-    { username: 'Alan Marinho', role: 'user', group: 'residencial', displayName: 'Alan Marinho' },
-    { username: 'Maristella Márcia', role: 'user', group: 'residencial', displayName: 'Maristella Márcia' },
-    { username: 'Thiago Velhinho', role: 'user', group: 'residencial', displayName: 'Thiago Velhinho' },
-    { username: 'Leonardo Almeida', role: 'user', group: 'residencial', displayName: 'Leonardo Almeida' }
-];
-
 const USER_GROUPS = [
     { id: 'residencial', name: 'Residencial' }
 ];

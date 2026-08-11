@@ -1,5 +1,50 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif; }
+.page-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+.primary-action-btn, .secondary-action-btn {
+    border: 0; border-radius: 12px; padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+    transition: transform .15s ease, background .15s ease, opacity .15s ease;
+}
+.primary-action-btn { background: #dc2626; color: #fff; }
+.primary-action-btn:hover { background: #b91c1c; transform: translateY(-1px); }
+.secondary-action-btn { background: #fff; color: #991b1b; border: 1px solid #fecaca; }
+.secondary-action-btn:hover { background: #fff1f2; }
+.primary-action-btn:disabled, .secondary-action-btn:disabled { opacity: .55; cursor: wait; transform: none; }
+.system-alert { padding: 10px 13px; border-radius: 12px; font-size: 13px; margin: 12px 0; }
+.system-alert.success { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
+.system-alert.error { color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; }
+.sync-status { max-width: 1040px; margin: 0 auto 8px; color: #6b7280; font-size: 12px; text-align: right; }
+.document-list, .member-list { display: grid; gap: 10px; }
+.document-card, .member-row { display: flex; align-items: center; gap: 13px; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; padding: 14px; }
+.document-file-icon { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 13px; background: #fee2e2; color: #b91c1c; font-size: 22px; font-weight: 700; }
+.document-copy { flex: 1; min-width: 0; }
+.document-copy h3 { color: #1f2937; font-weight: 700; overflow-wrap: anywhere; }
+.document-copy p { color: #6b7280; font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
+.document-empty { padding: 46px 18px; text-align: center; color: #6b7280; border: 1px dashed #d1d5db; border-radius: 16px; }
+.user-create-form { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr .7fr .8fr auto; gap: 9px; align-items: center; margin-bottom: 18px; padding: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; }
+.user-create-form .search-input { min-width: 0; }
+.member-row { padding: 11px 14px; }
+.member-row > :first-child { flex: 1; font-weight: 600; color: #374151; }
+.role-pill { border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+.role-pill.admin { background: #fee2e2; color: #991b1b; }
+.role-pill.user { background: #e0f2fe; color: #075985; }
+.member-group { color: #6b7280; font-size: 12px; min-width: 90px; text-align: right; }
+.message-composer { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 14px; margin-bottom: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; }
+.message-composer h3 { grid-column: 1 / -1; font-size: 14px; font-weight: 700; color: #374151; }
+.message-composer textarea { grid-column: 1 / -1; resize: vertical; }
+.message-composer .primary-action-btn { justify-self: start; }
+
+@media (max-width: 900px) {
+    .user-create-form { grid-template-columns: 1fr 1fr; }
+    .user-create-form .primary-action-btn { justify-self: start; }
+}
+@media (max-width: 640px) {
+    .page-heading-row, .document-card { align-items: flex-start; flex-direction: column; }
+    .document-file-icon { display: none; }
+    .user-create-form, .message-composer { grid-template-columns: 1fr; }
+    .message-composer h3, .message-composer textarea { grid-column: 1; }
+    .member-row { flex-wrap: wrap; }
+}
 .app-card, .folder-card {
     background: #ffffff;
     border: 1px solid #e5e7eb;

@@ -4,6 +4,7 @@ const App = () => {
     const [workspaceLoading, setWorkspaceLoading] = React.useState(false);
     const [backendError, setBackendError] = React.useState('');
     const [profiles, setProfiles] = React.useState([]);
+    const [pendingProfiles, setPendingProfiles] = React.useState([]);
     const [messages, setMessages] = React.useState([]);
     const [documents, setDocuments] = React.useState([]);
     const [uploadStatus, setUploadStatus] = React.useState(null);
@@ -35,11 +36,13 @@ const App = () => {
         setBackendError('');
         try {
             const nextProfiles = await SIMBackend.listProfiles();
-            const [nextMessages, nextDocuments] = await Promise.all([
+            const [nextMessages, nextDocuments, nextPendingProfiles] = await Promise.all([
                 SIMBackend.listMessages(nextProfiles),
-                SIMBackend.listDocuments()
+                SIMBackend.listDocuments(),
+                currentUser.role === 'admin' ? SIMBackend.listPendingProfiles() : Promise.resolve([])
             ]);
             setProfiles(nextProfiles);
+            setPendingProfiles(nextPendingProfiles);
             setMessages(nextMessages);
             setDocuments(nextDocuments);
         } catch (error) {
@@ -59,7 +62,7 @@ const App = () => {
 
     React.useEffect(() => {
         if (!user) {
-            setProfiles([]); setMessages([]); setDocuments([]);
+            setProfiles([]); setPendingProfiles([]); setMessages([]); setDocuments([]);
             return undefined;
         }
         const storageKey = `sim_seen_read_ids:${user.id}`;
@@ -83,6 +86,7 @@ const App = () => {
         setUser(profile);
         setBackendError('');
     };
+    const handleRegister = async (payload) => SIMBackend.signUp(payload);
     const handleLogout = async () => {
         await SIMBackend.signOut();
         setUser(null); setCurrentFolder(null); setNavigationStack([]); setSearchTerm(''); setActiveToolPage('');
@@ -176,9 +180,10 @@ const App = () => {
     const handleConfirmMessage = async (messageId) => { await SIMBackend.confirmMessage(messageId); await refreshWorkspace(user); };
     const handleDeleteMessages = async (ids) => { if (!ids.length) return; await SIMBackend.deleteMessages(ids); await refreshWorkspace(user); };
     const handleCreateUser = async (payload) => { await SIMBackend.createUser(payload); await refreshWorkspace(user); };
+    const handleApproveUser = async (payload) => { await SIMBackend.approveUser(payload); await refreshWorkspace(user); };
 
     if (authLoading) return React.createElement(LoadingPage, null);
-    if (!user) return React.createElement(LoginPage, { onLogin: handleLogin });
+    if (!user) return React.createElement(LoginPage, { onLogin: handleLogin, onRegister: handleRegister });
 
     const receiptIds = messages.flatMap(message => message.readBy.map(receipt => `${message.id}-${receipt.username}-${receipt.date}`));
     const notificationCount = user.role === 'admin'
@@ -195,7 +200,7 @@ const App = () => {
     const displayContent = () => {
         if (activeToolPage === 'contacts') return React.createElement(ContactsPage, { contactStore: contacts, onBack: goHome });
         if (activeToolPage === 'documents') return React.createElement(DocumentsPage, { user, documents, uploadStatus, onRequestUpload: () => scheduleUploadRef.current?.click(), onOpen: SIMBackend.openDocument, onBack: goHome });
-        if (activeToolPage === 'users' && user.role === 'admin') return React.createElement(UserAdminPage, { profiles, onCreate: handleCreateUser, onBack: goHome });
+        if (activeToolPage === 'users' && user.role === 'admin') return React.createElement(UserAdminPage, { profiles, pendingProfiles, onCreate: handleCreateUser, onApprove: handleApproveUser, onBack: goHome });
         if (searchTerm) return React.createElement(SearchResults, { searchTerm });
         if (currentFolder) return React.createElement(FolderView, { folder: currentFolder, onOpenFolder: openFolder, onBack: goBack });
         if (!currentCategory) return React.createElement('div', null, 'Categoria não encontrada');

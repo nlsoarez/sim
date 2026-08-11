@@ -3,6 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 import { corsHeaders } from "jsr:@supabase/supabase-js@2/cors";
 
 type CreateUserPayload = {
+  action?: unknown;
+  userId?: unknown;
   email?: unknown;
   password?: unknown;
   displayName?: unknown;
@@ -46,6 +48,45 @@ Deno.serve(async (request: Request) => {
     if (!adminProfile) return json({ error: "Apenas administradores podem criar usuários." }, 403);
 
     const payload = await request.json() as CreateUserPayload;
+    const action = String(payload.action ?? "create");
+    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    if (action === "approve") {
+      const userId = String(payload.userId ?? "");
+      const groupId = String(payload.groupId ?? "residencial").trim().toLowerCase();
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return json({ error: "Solicitação inválida." }, 400);
+      }
+      if (!groupId || groupId.length > 80) return json({ error: "Grupo inválido." }, 400);
+
+      const { error: confirmationError } = await adminClient.auth.admin.updateUserById(userId, {
+        email_confirm: true,
+      });
+      if (confirmationError) return json({ error: "Não foi possível validar o e-mail desta solicitação." }, 400);
+
+      const { data: approved, error: approveError } = await adminClient
+        .from("sim_profiles")
+        .update({ active: true, role: "user", group_id: groupId, updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("active", false)
+        .select("user_id, display_name, role, group_id, active")
+        .maybeSingle();
+      if (approveError) throw approveError;
+      if (!approved) return json({ error: "Solicitação pendente não encontrada." }, 404);
+
+      const { error: reviewError } = await adminClient
+        .from("sim_registration_requests")
+        .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: authData.user.id })
+        .eq("user_id", userId);
+      if (reviewError) throw reviewError;
+
+      return json({ user: approved });
+    }
+
+    if (action !== "create") return json({ error: "Ação inválida." }, 400);
+
     const email = String(payload.email ?? "").trim().toLowerCase();
     const password = String(payload.password ?? "");
     const displayName = String(payload.displayName ?? "").trim();
@@ -58,9 +99,6 @@ Deno.serve(async (request: Request) => {
     if (!['admin', 'user'].includes(role)) return json({ error: "Perfil de acesso inválido." }, 400);
     if (!groupId || groupId.length > 80) return json({ error: "Grupo inválido." }, 400);
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email,
       password,
@@ -72,17 +110,24 @@ Deno.serve(async (request: Request) => {
       return json({ error: createError?.message ?? "Não foi possível criar o usuário." }, status);
     }
 
-    const { error: insertError } = await adminClient.from("sim_profiles").insert({
+    const { error: insertError } = await adminClient.from("sim_profiles").upsert({
       user_id: created.user.id,
       display_name: displayName,
       role,
       group_id: groupId,
       active: true,
-    });
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id" });
     if (insertError) {
       await adminClient.auth.admin.deleteUser(created.user.id);
       throw insertError;
     }
+
+    const { error: reviewError } = await adminClient
+      .from("sim_registration_requests")
+      .update({ status: "approved", reviewed_at: new Date().toISOString(), reviewed_by: authData.user.id })
+      .eq("user_id", created.user.id);
+    if (reviewError) throw reviewError;
 
     return json({
       user: {

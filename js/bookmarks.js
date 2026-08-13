@@ -7,7 +7,7 @@ const bookmarkData = [
             "children": [
                     { "name": "Calendário de divisão de tarefas", "url": "https://nlsoarez.github.io/divisao-equipe-madrugada/", "icon": "Link", "type": "link", "emoji": "📅", "image": "assets/icons/icons8-timeline-week-100.png" },
                     { "name": "Gerador de mensagens", "url": "https://lirapin.github.io/gerador-de-mensagens/", "icon": "Link", "type": "link", "emoji": "📨", "image": "assets/icons/icons8-chat-bubble-100.png" },
-                    { "name": "Comunicador de falhas", "url": "https://lirapin.github.io/comunicador-de-falhas/", "icon": "Link", "type": "link", "emoji": "⚠️", "image": "assets/icons/icons8-error-100.png" },
+                    { "name": "Comunicador de falhas", "url": "https://nlsoarez.github.io/comunicador-de-falhas/", "icon": "Link", "type": "link", "emoji": "⚠️", "image": "assets/icons/icons8-error-100.png" },
                     { "name": "Dashboard de produtividade", "url": "https://dashboard-indicadores-cop-production.up.railway.app/", "icon": "Link", "type": "link", "emoji": "📊", "image": "assets/icons/icons8-combo-chart-100.png" },
                     { "name": "Dúvidas frequentes", "url": "https://lirapin.github.io/informativos/", "icon": "Link", "type": "link", "emoji": "💡", "image": "assets/icons/icons8-light-on-100.png" }
             ]

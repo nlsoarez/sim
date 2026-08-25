@@ -62,13 +62,54 @@ const LoginPage = ({ onLogin, onRegister }) => {
                 React.createElement('button', { key: 'register-mode', type: 'button', role: 'tab', 'aria-selected': mode === 'register', className: `auth-mode-btn ${mode === 'register' ? 'active' : ''}`, onClick: () => changeMode('register') }, 'Cadastrar')
             ]),
             mode === 'register' && React.createElement('input', { key: 'name', required: true, maxLength: 120, autoComplete: 'name', className: 'search-input mb-3', placeholder: 'Nome completo', value: displayName, onChange: (e) => setDisplayName(e.target.value) }),
-            React.createElement('input', { key: 'email', type: 'email', autoComplete: 'username', className: 'search-input mb-3', placeholder: 'E-mail corporativo', value: email, onChange: (e) => setEmail(e.target.value) }),
+            React.createElement('input', { key: 'email', type: mode === 'login' ? 'text' : 'email', autoComplete: 'username', autoCapitalize: 'none', spellCheck: false, className: 'search-input mb-3', placeholder: mode === 'login' ? 'Matrícula ou e-mail' : 'E-mail corporativo', value: email, onChange: (e) => setEmail(e.target.value) }),
             React.createElement('input', { key: 'pass', type: 'password', minLength: mode === 'register' ? 12 : undefined, autoComplete: mode === 'register' ? 'new-password' : 'current-password', className: 'search-input mb-3', placeholder: mode === 'register' ? 'Senha (mínimo 12 caracteres)' : 'Senha', value: password, onChange: (e) => setPassword(e.target.value) }),
             mode === 'register' && React.createElement('input', { key: 'pass-confirm', type: 'password', minLength: 12, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Confirme a senha', value: passwordConfirmation, onChange: (e) => setPasswordConfirmation(e.target.value) }),
             error && React.createElement('p', { key: 'error', className: 'text-sm text-red-600 mb-3 text-center' }, error),
             success && React.createElement('p', { key: 'success', className: 'auth-success' }, success),
             React.createElement('button', { key: 'btn', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? (mode === 'login' ? 'Entrando...' : 'Enviando...') : (mode === 'login' ? 'Entrar' : 'Enviar cadastro')),
             mode === 'register' && React.createElement('p', { key: 'approval-note', className: 'auth-approval-note' }, 'O cadastro não libera acesso imediato. Um administrador precisa aprová-lo.')
+        ])
+    );
+};
+
+const InitialPasswordChangePage = ({ user, onChangePassword, onLogout }) => {
+    const [password, setPassword] = React.useState('');
+    const [confirmation, setConfirmation] = React.useState('');
+    const [error, setError] = React.useState('');
+    const [loading, setLoading] = React.useState(false);
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (password.length < 12) {
+            setError('A nova senha deve ter pelo menos 12 caracteres.');
+            return;
+        }
+        if (password !== confirmation) {
+            setError('As senhas não coincidem.');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            await onChangePassword(password);
+        } catch (changeError) {
+            setError(changeError.message || 'Não foi possível alterar a senha.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return React.createElement('div', { className: 'min-h-screen flex items-center justify-center p-5', style: { background: '#d1d5db' } },
+        React.createElement('form', { onSubmit: handleSubmit, className: 'login-card password-change-card p-8 w-full max-w-sm' }, [
+            React.createElement('div', { key: 'logo', className: 'mx-auto w-16 h-16 flex items-center justify-center mb-4' }, React.createElement('img', { className: 'login-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),
+            React.createElement('h1', { key: 'title', className: 'text-xl font-bold text-center text-red-700 mb-2' }, 'Altere sua senha'),
+            React.createElement('p', { key: 'welcome', className: 'password-change-copy' }, `Olá, ${user.displayName}. Por segurança, defina uma senha pessoal antes de acessar o SIM.`),
+            React.createElement('input', { key: 'password', type: 'password', minLength: 12, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Nova senha (mínimo 12 caracteres)', value: password, onChange: event => setPassword(event.target.value) }),
+            React.createElement('input', { key: 'confirmation', type: 'password', minLength: 12, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Confirme a nova senha', value: confirmation, onChange: event => setConfirmation(event.target.value) }),
+            error && React.createElement('p', { key: 'error', className: 'text-sm text-red-600 mb-3 text-center' }, error),
+            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? 'Alterando...' : 'Alterar senha e entrar'),
+            React.createElement('button', { key: 'logout', type: 'button', disabled: loading, onClick: onLogout, className: 'password-change-logout' }, 'Sair')
         ])
     );
 };

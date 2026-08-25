@@ -61,7 +61,7 @@ const App = () => {
     }, []);
 
     React.useEffect(() => {
-        if (!user) {
+        if (!user || user.mustChangePassword) {
             setProfiles([]); setPendingProfiles([]); setMessages([]); setDocuments([]);
             return undefined;
         }
@@ -87,6 +87,11 @@ const App = () => {
         setBackendError('');
     };
     const handleRegister = async (payload) => SIMBackend.signUp(payload);
+    const handleChangeInitialPassword = async (password) => {
+        const profile = await SIMBackend.changeInitialPassword(password);
+        setUser(profile);
+        setBackendError('');
+    };
     const handleLogout = async () => {
         await SIMBackend.signOut();
         setUser(null); setCurrentFolder(null); setNavigationStack([]); setSearchTerm(''); setActiveToolPage('');
@@ -184,6 +189,7 @@ const App = () => {
 
     if (authLoading) return React.createElement(LoadingPage, null);
     if (!user) return React.createElement(LoginPage, { onLogin: handleLogin, onRegister: handleRegister });
+    if (user.mustChangePassword) return React.createElement(InitialPasswordChangePage, { user, onChangePassword: handleChangeInitialPassword, onLogout: handleLogout });
 
     const receiptIds = messages.flatMap(message => message.readBy.map(receipt => `${message.id}-${receipt.username}-${receipt.date}`));
     const notificationCount = user.role === 'admin'

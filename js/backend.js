@@ -17,8 +17,15 @@
         displayName: profile.display_name,
         role: profile.role,
         group: profile.group_id,
-        active: profile.active
+        active: profile.active,
+        mustChangePassword: Boolean(profile.must_change_password)
     }) : null;
+
+    const normalizeLoginIdentifier = (identifier) => {
+        const normalized = String(identifier || '').trim().toLowerCase();
+        if (/^[a-z]\d{6,7}$/.test(normalized)) return `${normalized}@sim.invalid`;
+        return normalized;
+    };
 
     const requireData = (result) => {
         if (result.error) throw result.error;
@@ -43,13 +50,30 @@
         return profile;
     };
 
-    const signIn = async (email, password) => {
-        const { data, error } = await client.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-        if (error) throw new Error('E-mail ou senha inválidos.');
+    const signIn = async (identifier, password) => {
+        const email = normalizeLoginIdentifier(identifier);
+        const { data, error } = await client.auth.signInWithPassword({ email, password });
+        if (error) throw new Error('Matrícula/e-mail ou senha inválidos.');
         const profile = await getProfile(data.user);
         if (!profile?.active) {
             await client.auth.signOut();
             throw new Error(profile ? 'Seu cadastro aguarda aprovação de um administrador.' : 'Sua conta não tem acesso ao SIM.');
+        }
+        return profile;
+    };
+
+    const changeInitialPassword = async (newPassword) => {
+        const password = String(newPassword || '');
+        if (password.length < 12) throw new Error('A nova senha deve ter pelo menos 12 caracteres.');
+
+        const { error } = await client.auth.updateUser({ password });
+        if (error) throw new Error(error.message || 'Não foi possível alterar a senha.');
+
+        const { data: userData, error: userError } = await client.auth.getUser();
+        if (userError || !userData.user) throw userError || new Error('Sessão inválida após a troca de senha.');
+        const profile = await getProfile(userData.user);
+        if (!profile || profile.mustChangePassword) {
+            throw new Error('A senha foi alterada, mas o acesso ainda não foi liberado. Entre novamente.');
         }
         return profile;
     };
@@ -227,7 +251,7 @@
     };
 
     window.SIMBackend = {
-        getCurrentUser, signIn, signUp, signOut: () => client.auth.signOut(), onAuthStateChange,
+        getCurrentUser, signIn, signUp, changeInitialPassword, signOut: () => client.auth.signOut(), onAuthStateChange,
         listProfiles, listPendingProfiles, listMessages, sendMessage, confirmMessage, deleteMessages,
         listDocuments, uploadDocument, openDocument, createUser, approveUser, subscribe
     };

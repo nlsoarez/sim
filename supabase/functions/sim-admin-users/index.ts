@@ -43,6 +43,7 @@ Deno.serve(async (request: Request) => {
       .eq("user_id", authData.user.id)
       .eq("role", "admin")
       .eq("active", true)
+      .eq("must_change_password", false)
       .maybeSingle();
     if (profileError) throw profileError;
     if (!adminProfile) return json({ error: "Apenas administradores podem criar usuários." }, 403);
@@ -71,7 +72,7 @@ Deno.serve(async (request: Request) => {
         .update({ active: true, role: "user", group_id: groupId, updated_at: new Date().toISOString() })
         .eq("user_id", userId)
         .eq("active", false)
-        .select("user_id, display_name, role, group_id, active")
+        .select("user_id, display_name, role, group_id, active, must_change_password")
         .maybeSingle();
       if (approveError) throw approveError;
       if (!approved) return json({ error: "Solicitação pendente não encontrada." }, 404);
@@ -116,6 +117,7 @@ Deno.serve(async (request: Request) => {
       role,
       group_id: groupId,
       active: true,
+      must_change_password: true,
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id" });
     if (insertError) {
@@ -136,6 +138,7 @@ Deno.serve(async (request: Request) => {
         role,
         group_id: groupId,
         active: true,
+        must_change_password: true,
       },
     }, 201);
   } catch (error) {

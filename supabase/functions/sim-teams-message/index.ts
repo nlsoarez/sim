@@ -54,7 +54,7 @@ Deno.serve(async (request: Request) => {
       .eq("must_change_password", false)
       .maybeSingle();
     if (profileError) throw profileError;
-    if (!adminProfile) return json({ error: "Apenas administradores podem enviar mensagens ao Teams." }, 403);
+    if (!adminProfile) return json({ error: "Apenas perfis Adm podem enviar mensagens ao Teams." }, 403);
 
     const payload = await request.json() as TeamsMessagePayload;
     const target = String(payload.target ?? "").trim();

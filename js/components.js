@@ -10,65 +10,32 @@ const AppCard = ({ item, onFolderOpen }) => {
     ]);
 };
 
-const LoginPage = ({ onLogin, onRegister }) => {
-    const [mode, setMode] = React.useState('login');
-    const [displayName, setDisplayName] = React.useState('');
+const LoginPage = ({ onLogin }) => {
     const [email, setEmail] = React.useState('');
     const [password, setPassword] = React.useState('');
-    const [passwordConfirmation, setPasswordConfirmation] = React.useState('');
     const [error, setError] = React.useState('');
-    const [success, setSuccess] = React.useState('');
     const [loading, setLoading] = React.useState(false);
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!email.trim() || !password || (mode === 'register' && !displayName.trim())) {
+        if (!email.trim() || !password) {
             setError('Preencha todos os campos obrigatórios.');
-            return;
-        }
-        if (mode === 'register' && password !== passwordConfirmation) {
-            setError('As senhas não coincidem.');
             return;
         }
         setLoading(true);
         setError('');
-        setSuccess('');
-        try {
-            if (mode === 'login') {
-                await onLogin(email, password);
-            } else {
-                await onRegister({ displayName, email, password });
-                setPassword('');
-                setPasswordConfirmation('');
-                setSuccess('Cadastro enviado. Aguarde a validação de um administrador antes de tentar entrar.');
-            }
-        }
-        catch (submitError) { setError(submitError.message || (mode === 'login' ? 'Não foi possível entrar.' : 'Não foi possível enviar o cadastro.')); }
+        try { await onLogin(email, password); }
+        catch (submitError) { setError(submitError.message || 'Não foi possível entrar.'); }
         finally { setLoading(false); }
-    };
-    const changeMode = (nextMode) => {
-        setMode(nextMode);
-        setError('');
-        setSuccess('');
-        setPassword('');
-        setPasswordConfirmation('');
     };
     return React.createElement('div', { className: 'min-h-screen flex items-center justify-center p-5', style: { background: '#d1d5db' } },
         React.createElement('form', { onSubmit: handleSubmit, className: 'login-card p-8 w-full max-w-sm' }, [
             React.createElement('div', { key: 'logo', className: 'mx-auto w-16 h-16 flex items-center justify-center mb-4' }, React.createElement('img', { className: 'login-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),
             React.createElement('h1', { key: 'title', className: 'text-2xl font-bold text-center text-red-700 mb-1' }, 'SIM'),
             React.createElement('p', { key: 'sub', className: 'text-center text-sm text-gray-500 mb-4' }, 'Sistema Integrado Madrugada'),
-            React.createElement('div', { key: 'modes', className: 'auth-mode-tabs', role: 'tablist', 'aria-label': 'Acesso ao SIM' }, [
-                React.createElement('button', { key: 'login-mode', type: 'button', role: 'tab', 'aria-selected': mode === 'login', className: `auth-mode-btn ${mode === 'login' ? 'active' : ''}`, onClick: () => changeMode('login') }, 'Entrar'),
-                React.createElement('button', { key: 'register-mode', type: 'button', role: 'tab', 'aria-selected': mode === 'register', className: `auth-mode-btn ${mode === 'register' ? 'active' : ''}`, onClick: () => changeMode('register') }, 'Cadastrar')
-            ]),
-            mode === 'register' && React.createElement('input', { key: 'name', required: true, maxLength: 120, autoComplete: 'name', className: 'search-input mb-3', placeholder: 'Nome completo', value: displayName, onChange: (e) => setDisplayName(e.target.value) }),
-            React.createElement('input', { key: 'email', type: mode === 'login' ? 'text' : 'email', autoComplete: 'username', autoCapitalize: 'none', spellCheck: false, className: 'search-input mb-3', placeholder: mode === 'login' ? 'Matrícula ou e-mail' : 'E-mail corporativo', value: email, onChange: (e) => setEmail(e.target.value) }),
-            React.createElement('input', { key: 'pass', type: 'password', minLength: mode === 'register' ? 12 : undefined, autoComplete: mode === 'register' ? 'new-password' : 'current-password', className: 'search-input mb-3', placeholder: mode === 'register' ? 'Senha (mínimo 12 caracteres)' : 'Senha', value: password, onChange: (e) => setPassword(e.target.value) }),
-            mode === 'register' && React.createElement('input', { key: 'pass-confirm', type: 'password', minLength: 12, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Confirme a senha', value: passwordConfirmation, onChange: (e) => setPasswordConfirmation(e.target.value) }),
+            React.createElement('input', { key: 'email', type: 'text', autoComplete: 'username', autoCapitalize: 'none', spellCheck: false, className: 'search-input mb-3', placeholder: 'Matrícula ou e-mail', value: email, onChange: (e) => setEmail(e.target.value) }),
+            React.createElement('input', { key: 'pass', type: 'password', autoComplete: 'current-password', className: 'search-input mb-3', placeholder: 'Senha', value: password, onChange: (e) => setPassword(e.target.value) }),
             error && React.createElement('p', { key: 'error', className: 'text-sm text-red-600 mb-3 text-center' }, error),
-            success && React.createElement('p', { key: 'success', className: 'auth-success' }, success),
-            React.createElement('button', { key: 'btn', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? (mode === 'login' ? 'Entrando...' : 'Enviando...') : (mode === 'login' ? 'Entrar' : 'Enviar cadastro')),
-            mode === 'register' && React.createElement('p', { key: 'approval-note', className: 'auth-approval-note' }, 'O cadastro não libera acesso imediato. Um administrador precisa aprová-lo.')
+            React.createElement('button', { key: 'btn', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? 'Entrando...' : 'Entrar')
         ])
     );
 };
@@ -210,7 +177,8 @@ const ActionIcon = ({ name, size = 20, className = '' }) => {
     const paths = {
         Upload: ['M12 16V4', 'M7 9l5-5 5 5', 'M5 20h14'],
         Trash: ['M4 7h16', 'M9 7V4h6v3', 'M7 7l1 13h8l1-13', 'M10 11v5M14 11v5'],
-        Settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.33.73.6 1 .3.27.68.4 1.1.4h.09v4h-.09c-.42 0-.8.13-1.1.4-.27.27-.48.62-.6 1Z']
+        Settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.33.73.6 1 .3.27.68.4 1.1.4h.09v4h-.09c-.42 0-.8.13-1.1.4-.27.27-.48.62-.6 1Z'],
+        Plus: ['M12 5v14', 'M5 12h14']
     };
     return React.createElement('svg', {
         width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
@@ -370,8 +338,8 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
             React.createElement('div', { key: 'title-wrap', className: 'flex items-center gap-3' }, [
                 React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
                 React.createElement('div', { key: 'copy' }, [
-                    React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-gray-700' }, 'Escalas e documentos'),
-                    React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Arquivos publicados pela administração para toda a equipe.')
+                    React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-gray-700' }, 'Documentos'),
+                    React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Arquivos publicados por perfis Adm para toda a equipe.')
                 ])
             ]),
             user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'icon-action-btn', title: 'Anexar planilha', 'aria-label': 'Anexar planilha' }, React.createElement(ActionIcon, { name: 'Upload', size: 20 }))
@@ -393,11 +361,10 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
     ]);
 };
 
-const UserAdminPage = ({ currentUser, profiles, pendingProfiles = [], onCreate, onApprove, onDelete, onBack }) => {
-    const [form, setForm] = React.useState({ displayName: '', email: '', password: '', role: 'user', groupId: 'residencial' });
+const UserAdminPage = ({ currentUser, profiles, onCreate, onDelete, onBack }) => {
+    const [form, setForm] = React.useState({ displayName: '', email: '', password: '', role: 'user', groupId: 'Residencial' });
     const [status, setStatus] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
-    const [approvingId, setApprovingId] = React.useState('');
     const [deletingId, setDeletingId] = React.useState('');
     const formatGroupName = (group) => normalizeText(group) === 'residencial' ? 'Residencial' : String(group || '');
     const orderedProfiles = [...profiles].sort((a, b) => {
@@ -411,21 +378,11 @@ const UserAdminPage = ({ currentUser, profiles, pendingProfiles = [], onCreate, 
         setStatus(null);
         try {
             await onCreate(form);
-            setForm({ displayName: '', email: '', password: '', role: 'user', groupId: 'residencial' });
+            setForm({ displayName: '', email: '', password: '', role: 'user', groupId: 'Residencial' });
             setStatus({ type: 'success', text: 'Usuário criado. Entregue o e-mail e a senha inicial por um canal seguro.' });
         } catch (createError) {
             setStatus({ type: 'error', text: createError.message || 'Não foi possível criar o usuário.' });
         } finally { setLoading(false); }
-    };
-    const approve = async (profile) => {
-        setApprovingId(profile.id);
-        setStatus(null);
-        try {
-            await onApprove({ userId: profile.id, groupId: profile.group });
-            setStatus({ type: 'success', text: `${profile.displayName} foi aprovado e já pode entrar no SIM.` });
-        } catch (approveError) {
-            setStatus({ type: 'error', text: approveError.message || 'Não foi possível aprovar o usuário.' });
-        } finally { setApprovingId(''); }
     };
     const remove = async (profile) => {
         if (profile.id === currentUser.id) return;
@@ -447,37 +404,21 @@ const UserAdminPage = ({ currentUser, profiles, pendingProfiles = [], onCreate, 
                 React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Crie contas individuais; senhas nunca são armazenadas no código.')
             ])
         ]),
-        React.createElement('section', { key: 'pending', className: 'pending-users-panel' }, [
-            React.createElement('div', { key: 'heading', className: 'pending-users-heading' }, [
-                React.createElement('h3', { key: 'title' }, 'Cadastros aguardando validação'),
-                React.createElement('span', { key: 'count', className: 'pending-count' }, String(pendingProfiles.length))
-            ]),
-            pendingProfiles.length === 0
-                ? React.createElement('p', { key: 'empty', className: 'pending-empty' }, 'Nenhuma solicitação pendente.')
-                : React.createElement('div', { key: 'list', className: 'member-list' }, pendingProfiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row pending-member-row' }, [
-                    React.createElement('div', { key: 'identity', className: 'pending-identity' }, [
-                        React.createElement('strong', { key: 'name' }, profile.displayName),
-                        React.createElement('span', { key: 'email' }, profile.email || 'E-mail não disponível')
-                    ]),
-                    React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
-                    React.createElement('button', { key: 'approve', type: 'button', disabled: !!approvingId, className: 'approve-user-btn', onClick: () => approve(profile) }, approvingId === profile.id ? 'Aprovando...' : 'Aprovar')
-                ])))
-        ]),
         React.createElement('form', { key: 'form', onSubmit: submit, className: 'user-create-form' }, [
             React.createElement('input', { key: 'name', required: true, maxLength: 120, className: 'search-input', placeholder: 'Nome completo', value: form.displayName, onChange: update('displayName') }),
             React.createElement('input', { key: 'email', required: true, type: 'email', autoComplete: 'off', className: 'search-input', placeholder: 'E-mail corporativo', value: form.email, onChange: update('email') }),
-            React.createElement('input', { key: 'password', required: true, minLength: 8, type: 'password', autoComplete: 'new-password', className: 'search-input', placeholder: 'claro123', value: form.password, onChange: update('password') }),
+            React.createElement('input', { key: 'password', required: true, minLength: 8, type: 'password', autoComplete: 'new-password', className: 'search-input user-password-input', placeholder: 'claro123', value: form.password, onChange: update('password') }),
             React.createElement('select', { key: 'role', className: 'search-input', value: form.role, onChange: update('role') }, [
-                React.createElement('option', { key: 'user', value: 'user' }, 'Usuário'),
-                React.createElement('option', { key: 'admin', value: 'admin' }, 'Administrador')
+                React.createElement('option', { key: 'user', value: 'user' }, 'User'),
+                React.createElement('option', { key: 'admin', value: 'admin' }, 'Adm')
             ]),
             React.createElement('input', { key: 'group', required: true, maxLength: 80, className: 'search-input', placeholder: 'Grupo', value: form.groupId, onChange: update('groupId') }),
-            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn create-user-icon-btn', title: 'Criar usuário', 'aria-label': 'Criar usuário' }, loading ? '…' : '+')
+            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn create-user-icon-btn', title: 'Criar usuário', 'aria-label': 'Criar usuário' }, loading ? '…' : React.createElement(ActionIcon, { name: 'Plus', size: 20 }))
         ]),
         status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
         React.createElement('div', { key: 'members', className: 'member-list' }, orderedProfiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
-            React.createElement('span', { key: 'name' }, profile.displayName),
-            React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Admin' : 'Usuário'),
+            React.createElement('span', { key: 'name' }, profile.role === 'admin' ? profile.displayName.toLocaleUpperCase('pt-BR') : profile.displayName),
+            React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Adm' : 'User'),
             React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
             React.createElement('button', {
                 key: 'delete', type: 'button',

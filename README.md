@@ -9,6 +9,7 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 - Cadastro público com validação obrigatória por um administrador.
 - Administração de usuários pelo próprio portal. Apenas administradores podem aprovar contas ou criar acesso imediato.
 - Depósito privado para planilhas de escalonamento e PDFs, com limite de 20 MB.
+- Diretório de contatos por cluster persistido e compartilhado entre todos os usuários ativos.
 - Central de mensagens persistente, com envio para todos, grupo ou usuário.
 - Envio opcional da mesma mensagem ao Microsoft Teams, sem interromper ou substituir o registro interno.
 - Confirmação de leitura e relatório imprimível/PDF para administradores.
@@ -20,11 +21,11 @@ As contas já existentes de Nelson e Kelly foram associadas ao SIM como administ
 
 Na tela inicial, a opção **Cadastrar** cria uma solicitação com nome, e-mail e senha. A senha precisa ter pelo menos 12 caracteres. O solicitante continua sem acesso aos arquivos e mensagens até a validação administrativa. Ao aprovar, o administrador também valida o e-mail da conta.
 
-Depois de entrar, um administrador abre **Administração → Gerenciar usuários** e usa **Aprovar** na seção **Cadastros aguardando validação**. O administrador também pode criar uma conta com acesso imediato pelo formulário da mesma página.
+Depois de entrar, um administrador usa o ícone de engrenagem **Gerenciar usuários** e seleciona **Aprovar** na seção **Cadastros aguardando validação**. O administrador também pode criar uma conta com acesso imediato pelo formulário da mesma página.
 
 ## Publicar planilhas
 
-Um administrador abre **Administração → Anexar planilha de escalonamento**. O arquivo é armazenado no bucket privado `sim-documents` e aparece em **Escalas e documentos** para todos os membros ativos.
+Um administrador abre **Escalas e documentos** e usa o ícone de upload. O arquivo é armazenado no bucket privado `sim-documents` e aparece na mesma página para todos os membros ativos.
 
 Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 
@@ -33,6 +34,7 @@ Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 - Projeto Supabase: `divisao-equipe-madrugada` (`aaxdcpftynjphzitigrv`).
 - Migrações versionadas em `supabase/migrations/`, incluindo o backend multiusuário, cadastro com aprovação e índices relacionados.
 - Função de criação de usuários: `supabase/functions/sim-admin-users/index.ts`.
+- Função protegida para ações administrativas em documentos: `supabase/functions/sim-admin-actions/index.ts`.
 - Função protegida de envio ao Teams: `supabase/functions/sim-teams-message/index.ts`. Os webhooks ficam em segredo de ambiente e nunca são publicados no GitHub Pages.
 - A chave presente no JavaScript é uma chave **publicável**, própria para clientes web. Nenhuma chave secreta ou `service_role` é enviada ao navegador.
 - O bucket é privado. Download, upload e metadados dependem de sessão válida e políticas RLS.

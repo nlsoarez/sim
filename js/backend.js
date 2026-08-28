@@ -113,7 +113,7 @@
         const rows = requireData(profileResult) || [];
         const requests = requireData(requestResult) || [];
         const requestMap = new Map(requests.map(request => [request.user_id, request]));
-        return rows.map(row => ({
+        return rows.filter(row => requestMap.has(row.user_id)).map(row => ({
             ...normalizeProfile(row),
             email: requestMap.get(row.user_id)?.email || '',
             requestedAt: requestMap.get(row.user_id)?.requested_at || row.created_at
@@ -221,6 +221,53 @@
         window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
     };
 
+    const deleteDocument = async (documentId) => {
+        const { data, error } = await client.functions.invoke('sim-admin-actions', {
+            body: { action: 'delete_document', documentId }
+        });
+        if (error) {
+            let message = 'Não foi possível excluir o documento.';
+            try {
+                const body = await error.context?.json();
+                if (body?.error) message = body.error;
+            } catch (_) { /* response body may already be consumed */ }
+            throw new Error(message);
+        }
+        return data;
+    };
+
+    const getContactDirectory = async () => {
+        const row = requireData(await client
+            .from('sim_contact_directory')
+            .select('contact_store, source_file_name, updated_at')
+            .eq('id', 1)
+            .maybeSingle());
+        return row ? {
+            contactStore: row.contact_store,
+            sourceFileName: row.source_file_name,
+            updatedAt: row.updated_at
+        } : null;
+    };
+
+    const saveContactDirectory = async (contactStore, sourceFileName) => {
+        const { data: authData, error: authError } = await client.auth.getUser();
+        if (authError || !authData.user) throw authError || new Error('Sessão inválida.');
+        const safeFileName = String(sourceFileName || '').trim().slice(0, 255);
+        if (!safeFileName) throw new Error('Nome do arquivo de origem inválido.');
+        const row = requireData(await client.from('sim_contact_directory').upsert({
+            id: 1,
+            contact_store: contactStore,
+            source_file_name: safeFileName,
+            updated_by: authData.user.id,
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'id' }).select('contact_store, source_file_name, updated_at').single());
+        return {
+            contactStore: row.contact_store,
+            sourceFileName: row.source_file_name,
+            updatedAt: row.updated_at
+        };
+    };
+
     const createUser = async (payload) => {
         const { data, error } = await client.functions.invoke('sim-admin-users', { body: payload });
         if (error) {
@@ -249,12 +296,28 @@
         return data.user;
     };
 
+    const deleteUser = async (userId) => {
+        const { data, error } = await client.functions.invoke('sim-admin-users', {
+            body: { action: 'delete', userId }
+        });
+        if (error) {
+            let message = 'Não foi possível excluir o usuário do SIM.';
+            try {
+                const body = await error.context?.json();
+                if (body?.error) message = body.error;
+            } catch (_) { /* response body may already be consumed */ }
+            throw new Error(message);
+        }
+        return data.user;
+    };
+
     const subscribe = (refresh) => {
         const channel = client.channel('sim-workspace')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_messages' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_message_receipts' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_documents' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_profiles' }, refresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_contact_directory' }, refresh)
             .subscribe();
         return () => client.removeChannel(channel);
     };
@@ -269,6 +332,8 @@
     window.SIMBackend = {
         getCurrentUser, signIn, signUp, changeInitialPassword, signOut: () => client.auth.signOut(), onAuthStateChange,
         listProfiles, listPendingProfiles, listMessages, sendMessage, sendTeamsMessage, confirmMessage, deleteMessages,
-        listDocuments, uploadDocument, openDocument, createUser, approveUser, subscribe
+        listDocuments, uploadDocument, openDocument, deleteDocument,
+        getContactDirectory, saveContactDirectory,
+        createUser, approveUser, deleteUser, subscribe
     };
 })();

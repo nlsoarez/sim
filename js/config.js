@@ -13,14 +13,14 @@ const CONTACT_GLOBAL_AREA_RULES = {
     MG: ['MG']
 };
 const CONTACT_FIELDS = {
-    area: ['area', 'área', 'estado'],
-    topologia: ['topologia', 'cidade', 'municipio', 'município', 'localidade'],
-    nome: ['nome', 'responsavel', 'responsável'],
-    cargo: ['cargo', 'funcao', 'função'],
-    telefone: ['telefone', 'celular', 'whatsapp', 'contato'],
+    area: ['area', 'área', 'estado', 'regional', 'regiao', 'região'],
+    topologia: ['topologia', 'cidade', 'municipio', 'município', 'localidade', 'praça', 'praca'],
+    nome: ['nome', 'responsavel', 'responsável', 'colaborador'],
+    cargo: ['cargo', 'funcao', 'função', 'atividade'],
+    telefone: ['telefone', 'celular', 'whatsapp', 'contato', 'fone', 'tel'],
     nivel: ['nivel', 'nível'],
-    observacoes: ['observacoes', 'observações', 'observacao', 'observação', 'comentario', 'comentário'],
-    cluster: ['cluster']
+    observacoes: ['observacoes', 'observações', 'observacao', 'observação', 'comentario', 'comentário', 'obs'],
+    cluster: ['cluster', 'regional cluster']
 };
 
 

@@ -6,9 +6,9 @@ const bookmarkData = [
             "emoji": "✅",
             "children": [
                     { "name": "Calendário de divisão de tarefas", "url": "https://nlsoarez.github.io/divisao-equipe-madrugada/", "icon": "Link", "type": "link", "emoji": "📅", "image": "assets/icons/icons8-timeline-week-100.png" },
-                    { "name": "Gerador de mensagens", "url": "https://lirapin.github.io/gerador-de-mensagens/", "icon": "Link", "type": "link", "emoji": "📨", "image": "assets/icons/icons8-chat-bubble-100.png" },
+                    { "name": "Gerador de mensagens", "url": "https://gerador.179-198-124-8.sslip.io/", "icon": "Link", "type": "link", "emoji": "📨", "image": "assets/icons/icons8-chat-bubble-100.png" },
                     { "name": "Comunicador de falhas", "url": "https://nlsoarez.github.io/comunicador-de-falhas/", "icon": "Link", "type": "link", "emoji": "⚠️", "image": "assets/icons/icons8-error-100.png" },
-                    { "name": "Dashboard de produtividade", "url": "https://dashboard-indicadores-cop-production.up.railway.app/", "icon": "Link", "type": "link", "emoji": "📊", "image": "assets/icons/icons8-combo-chart-100.png" },
+                    { "name": "Dashboard de produtividade", "url": "https://dashboard.163-176-155-119.sslip.io/", "icon": "Link", "type": "link", "emoji": "📊", "image": "assets/icons/icons8-combo-chart-100.png" },
                     { "name": "Dúvidas frequentes", "url": "https://lirapin.github.io/informativos/", "icon": "Link", "type": "link", "emoji": "💡", "image": "assets/icons/icons8-light-on-100.png" }
             ]
     },
@@ -32,6 +32,7 @@ const bookmarkData = [
             "emoji": "🌐",
             "children": [
                     { "name": "Portal SCR", "url": "http://10.29.5.216/scr/ui-newsletter.php", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
+                    { "name": "Portal CTO", "url": "http://10.29.5.216/portal/pages/ui_realtime_detalhamento_fibra.php?submenu=fibra-gpon", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "Portal Claro", "url": "http://portalclarobrasil/", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "BORA!", "url": "https://bora.claro.com.br/timeline", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "Orhganiza", "url": "https://pontodigital.claro.com.br/entrar", "icon": "Link", "type": "link", "emoji": "🔗", "image": "assets/icons/icons8-time-machine-100.png" },

@@ -8,6 +8,7 @@ const App = () => {
     const [messages, setMessages] = React.useState([]);
     const [documents, setDocuments] = React.useState([]);
     const [uploadStatus, setUploadStatus] = React.useState(null);
+    const [contactUploadStatus, setContactUploadStatus] = React.useState(null);
     const [activeCategory, setActiveCategory] = React.useState(bookmarkData[0]?.name || 'SIM');
     const [searchTerm, setSearchTerm] = React.useState('');
     const [navigationStack, setNavigationStack] = React.useState([]);
@@ -15,20 +16,24 @@ const App = () => {
     const [showMessages, setShowMessages] = React.useState(false);
     const [seenReadIds, setSeenReadIds] = React.useState([]);
     const [contacts, setContactsState] = React.useState(() => {
-        const saved = localStorage.getItem('sim_contacts');
-        return saved ? ensureContactStore(JSON.parse(saved)) : makeContactStore();
+        try {
+            const saved = localStorage.getItem('sim_contacts');
+            return saved ? ensureContactStore(JSON.parse(saved)) : makeContactStore();
+        } catch (_) { return makeContactStore(); }
     });
     const [activeToolPage, setActiveToolPage] = React.useState('');
-    const [showTopMenu, setShowTopMenu] = React.useState(false);
     const contactUploadRef = React.useRef(null);
     const scheduleUploadRef = React.useRef(null);
-    const topMenuRef = React.useRef(null);
+    const legacyContactsRef = React.useRef(contacts);
+    const legacyMigrationAttemptedRef = React.useRef(false);
 
     const setContacts = (newContacts) => {
         const nextContacts = ensureContactStore(newContacts);
         setContactsState(nextContacts);
-        localStorage.setItem('sim_contacts', JSON.stringify(nextContacts));
+        try { localStorage.setItem('sim_contacts', JSON.stringify(nextContacts)); }
+        catch (_) { /* Supabase remains the authoritative shared store. */ }
     };
+    const countContacts = (store) => CONTACT_CLUSTERS.reduce((total, cluster) => total + (ensureContactStore(store).sheets?.[cluster]?.length || 0), 0);
 
     const refreshWorkspace = React.useCallback(async (currentUser) => {
         if (!currentUser) return;
@@ -36,15 +41,26 @@ const App = () => {
         setBackendError('');
         try {
             const nextProfiles = await SIMBackend.listProfiles();
-            const [nextMessages, nextDocuments, nextPendingProfiles] = await Promise.all([
+            const [nextMessages, nextDocuments, nextPendingProfiles, sharedContacts] = await Promise.all([
                 SIMBackend.listMessages(nextProfiles),
                 SIMBackend.listDocuments(),
-                currentUser.role === 'admin' ? SIMBackend.listPendingProfiles() : Promise.resolve([])
+                currentUser.role === 'admin' ? SIMBackend.listPendingProfiles() : Promise.resolve([]),
+                SIMBackend.getContactDirectory()
             ]);
             setProfiles(nextProfiles);
             setPendingProfiles(nextPendingProfiles);
             setMessages(nextMessages);
             setDocuments(nextDocuments);
+            if (sharedContacts?.contactStore) {
+                setContacts(sharedContacts.contactStore);
+            } else if (currentUser.role === 'admin' && !legacyMigrationAttemptedRef.current && countContacts(legacyContactsRef.current) > 0) {
+                legacyMigrationAttemptedRef.current = true;
+                const migrated = await SIMBackend.saveContactDirectory(legacyContactsRef.current, 'migração do armazenamento local');
+                setContacts(migrated.contactStore);
+                setContactUploadStatus({ type: 'success', text: 'Contatos antigos migrados para o diretório compartilhado.' });
+            } else {
+                setContacts(makeContactStore());
+            }
         } catch (error) {
             setBackendError(error.message || 'Não foi possível sincronizar os dados do SIM.');
         } finally { setWorkspaceLoading(false); }
@@ -71,16 +87,6 @@ const App = () => {
         return SIMBackend.subscribe(() => refreshWorkspace(user));
     }, [user, refreshWorkspace]);
 
-    React.useEffect(() => {
-        if (!showTopMenu) return undefined;
-        const handleOutsideClick = (event) => {
-            if (topMenuRef.current && topMenuRef.current.contains(event.target)) return;
-            setShowTopMenu(false);
-        };
-        document.addEventListener('mousedown', handleOutsideClick);
-        return () => document.removeEventListener('mousedown', handleOutsideClick);
-    }, [showTopMenu]);
-
     const handleLogin = async (email, password) => {
         const profile = await SIMBackend.signIn(email, password);
         setUser(profile);
@@ -100,29 +106,50 @@ const App = () => {
     const openFolder = (folder) => { setActiveToolPage(''); setNavigationStack(previous => [...previous, currentFolder || bookmarkData.find(category => category.name === activeCategory)]); setCurrentFolder(folder); setSearchTerm(''); };
     const goBack = () => { const previous = navigationStack[navigationStack.length - 1]; setNavigationStack(stack => stack.slice(0, -1)); setCurrentFolder(previous); };
     const selectCategory = (name) => { setActiveToolPage(''); setActiveCategory(name); setCurrentFolder(null); setNavigationStack([]); setSearchTerm(''); };
-    const openToolPage = (page) => { setActiveToolPage(page); setCurrentFolder(null); setNavigationStack([]); setSearchTerm(''); setShowTopMenu(false); };
+    const openToolPage = (page) => { setActiveToolPage(page); setCurrentFolder(null); setNavigationStack([]); setSearchTerm(''); };
 
+    const fieldForHeader = (header) => {
+        const normalizedHeader = normalizeText(header).trim();
+        if (!normalizedHeader) return '';
+        return Object.keys(CONTACT_FIELDS).find(field => CONTACT_FIELDS[field].some(alias => {
+            const normalizedAlias = normalizeText(alias);
+            return normalizedHeader === normalizedAlias || normalizedHeader.includes(normalizedAlias);
+        })) || '';
+    };
+    const findHeaderRow = (matrix) => {
+        let best = { index: 0, score: -1 };
+        matrix.slice(0, 25).forEach((row, index) => {
+            const fields = new Set((row || []).map(fieldForHeader).filter(Boolean));
+            const score = fields.size + (fields.has('nome') ? 2 : 0) + (fields.has('telefone') ? 2 : 0);
+            if (score > best.score) best = { index, score };
+        });
+        return best.index;
+    };
     const parseCsv = (text) => {
-        const rows = String(text || '').trim().split(/\r?\n/).map(line => line.split(/;|,/).map(value => value.trim()));
-        const headers = rows.shift() || [];
-        return rows.map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] || ''])));
+        const matrix = String(text || '').trim().split(/\r?\n/).map(line => line.split(/;|,|\t/).map(value => value.trim().replace(/^"|"$/g, '')));
+        const headerIndex = findHeaderRow(matrix);
+        const headers = matrix[headerIndex] || [];
+        return matrix.slice(headerIndex + 1).map(row => Object.fromEntries(headers.map((header, index) => [header, row[index] || ''])));
     };
     const worksheetToRows = (sheet) => {
         if (!window.XLSX || !sheet?.['!ref']) return { rows: [], headerNotes: {} };
         const range = window.XLSX.utils.decode_range(sheet['!ref']);
+        const matrix = window.XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false });
+        const headerOffset = findHeaderRow(matrix);
+        const headerRowIndex = range.s.r + headerOffset;
         const headers = [];
         const headerNotes = {};
         for (let col = range.s.c; col <= range.e.c; col++) {
-            const cell = sheet[window.XLSX.utils.encode_cell({ r: range.s.r, c: col })];
+            const cell = sheet[window.XLSX.utils.encode_cell({ r: headerRowIndex, c: col })];
             const header = String(cell?.v || '').trim();
             headers.push(header);
             if (cell?.c?.length) {
-                const field = Object.keys(CONTACT_FIELDS).find(key => CONTACT_FIELDS[key].some(alias => normalizeText(header).includes(normalizeText(alias))));
+                const field = fieldForHeader(header);
                 if (field) headerNotes[field] = cell.c.map(comment => comment.t).filter(Boolean).join('\n');
             }
         }
         const rows = [];
-        for (let rowIndex = range.s.r + 1; rowIndex <= range.e.r; rowIndex++) {
+        for (let rowIndex = headerRowIndex + 1; rowIndex <= range.e.r; rowIndex++) {
             const row = {}; const notes = []; const fieldNotes = {};
             headers.forEach((header, offset) => {
                 if (!header) return;
@@ -130,7 +157,7 @@ const App = () => {
                 row[header] = cell?.v ?? '';
                 if (cell?.c?.length) {
                     const note = cell.c.map(comment => comment.t).filter(Boolean).join('\n');
-                    const field = Object.keys(CONTACT_FIELDS).find(key => CONTACT_FIELDS[key].some(alias => normalizeText(header).includes(normalizeText(alias))));
+                    const field = fieldForHeader(header);
                     if (field) fieldNotes[field] = note;
                     notes.push(note);
                 }
@@ -140,35 +167,74 @@ const App = () => {
         }
         return { rows, headerNotes };
     };
+    const resolveCluster = (value) => {
+        const normalized = normalizeText(value).toUpperCase();
+        return CONTACT_CLUSTERS.find(cluster => new RegExp(`(^|[^A-Z])${cluster}([^A-Z]|$)`).test(normalized)) || '';
+    };
     const parseContactWorkbook = (workbook) => {
         const sheets = {}; const references = {}; const sheetNotes = {};
-        workbook.SheetNames.slice(0, 7).forEach((sheetName, index) => {
-            const cluster = CONTACT_CLUSTERS[index]; const parsed = worksheetToRows(workbook.Sheets[sheetName]);
-            sheets[cluster] = parsed.rows.map(row => normalizeContactRow(row, cluster)).filter(contact => contact.area && contact.nome && contact.telefone);
-            const note = sheets[cluster].find(contact => contact.observacoes || contact.note);
-            sheetNotes[cluster] = parsed.headerNotes?.observacoes || note?.note || note?.observacoes || '';
-        });
-        workbook.SheetNames.slice(7, 14).forEach((sheetName, index) => {
-            const fallback = CONTACT_CLUSTERS[index];
-            worksheetToRows(workbook.Sheets[sheetName]).rows.map(row => normalizeReferenceRow(row, fallback)).filter(ref => ref.area && ref.cidade).forEach(ref => {
-                const fromRow = String(ref.cluster || '').trim().toUpperCase(); const cluster = CONTACT_CLUSTERS.includes(fromRow) ? fromRow : fallback;
-                references[cluster] = references[cluster] || []; references[cluster].push({ ...ref, sheet: cluster });
+        CONTACT_CLUSTERS.forEach(cluster => { sheets[cluster] = []; references[cluster] = []; sheetNotes[cluster] = ''; });
+        workbook.SheetNames.forEach((sheetName, index) => {
+            const parsed = worksheetToRows(workbook.Sheets[sheetName]);
+            const sheetCluster = resolveCluster(sheetName);
+            const positionalCluster = CONTACT_CLUSTERS[index % CONTACT_CLUSTERS.length];
+            parsed.rows.forEach(row => {
+                const cluster = resolveCluster(getRowValue(row, 'cluster')) || sheetCluster || positionalCluster;
+                const contact = normalizeContactRow(row, cluster);
+                if (contact.nome && contact.phoneDigits) {
+                    if (!contact.area) contact.area = cluster;
+                    sheets[cluster].push({ ...contact, sheet: cluster });
+                    return;
+                }
+                const reference = normalizeReferenceRow(row, cluster);
+                if (reference.area && reference.cidade) references[cluster].push({ ...reference, sheet: cluster });
             });
+            const noteCluster = sheetCluster || positionalCluster;
+            const firstNote = sheets[noteCluster].find(contact => contact.observacoes || contact.note);
+            if (!sheetNotes[noteCluster]) sheetNotes[noteCluster] = parsed.headerNotes?.observacoes || firstNote?.note || firstNote?.observacoes || '';
         });
-        CONTACT_CLUSTERS.forEach(cluster => { sheets[cluster] = sheets[cluster] || []; references[cluster] = references[cluster] || []; sheetNotes[cluster] = sheetNotes[cluster] || ''; });
         return makeContactStore(sheets, references, sheetNotes);
     };
     const handleContactUpload = (event) => {
         const file = event.target.files?.[0]; if (!file) return;
+        setContactUploadStatus({ type: 'success', text: 'Importando e publicando contatos...' });
+        openToolPage('contacts');
         const reader = new FileReader();
-        reader.onload = loadEvent => {
-            const data = loadEvent.target.result;
-            const nextContacts = window.XLSX && /\.(xlsx|xls)$/i.test(file.name)
-                ? parseContactWorkbook(window.XLSX.read(data, { type: 'array', cellComments: true }))
-                : makeContactStore({ BA: parseCsv(data).map(row => normalizeContactRow(row, 'BA')).filter(contact => contact.area && contact.nome && contact.telefone) }, {});
-            setContacts(nextContacts); openToolPage('contacts'); event.target.value = '';
+        reader.onload = async loadEvent => {
+            try {
+                const data = loadEvent.target.result;
+                let nextContacts;
+                if (window.XLSX && /\.(xlsx|xls)$/i.test(file.name)) {
+                    const workbook = window.XLSX.read(data, { type: 'array', cellComments: true });
+                    nextContacts = parseContactWorkbook(workbook);
+                } else {
+                    const rows = parseCsv(new TextDecoder('utf-8').decode(data));
+                    const sheets = {};
+                    rows.forEach(row => {
+                        const cluster = resolveCluster(getRowValue(row, 'cluster')) || 'BA';
+                        const contact = normalizeContactRow(row, cluster);
+                        if (contact.nome && contact.phoneDigits) {
+                            if (!contact.area) contact.area = cluster;
+                            sheets[cluster] = sheets[cluster] || [];
+                            sheets[cluster].push(contact);
+                        }
+                    });
+                    nextContacts = makeContactStore(sheets, {});
+                }
+                const importedCount = countContacts(nextContacts);
+                if (!importedCount) throw new Error('Nenhum contato válido foi encontrado. Verifique os cabeçalhos Nome e Telefone.');
+                const saved = await SIMBackend.saveContactDirectory(nextContacts, file.name);
+                setContacts(saved.contactStore);
+                setContactUploadStatus({ type: 'success', text: `${importedCount} contato(s) publicados para todos os usuários.` });
+            } catch (error) {
+                setContactUploadStatus({ type: 'error', text: error.message || 'Não foi possível importar a planilha de contatos.' });
+            } finally { event.target.value = ''; }
         };
-        if (window.XLSX && /\.(xlsx|xls)$/i.test(file.name)) reader.readAsArrayBuffer(file); else reader.readAsText(file, 'utf-8');
+        reader.onerror = () => {
+            setContactUploadStatus({ type: 'error', text: 'Não foi possível ler o arquivo selecionado.' });
+            event.target.value = '';
+        };
+        reader.readAsArrayBuffer(file);
     };
     const handleScheduleUpload = async (event) => {
         const file = event.target.files?.[0]; if (!file) return;
@@ -198,6 +264,8 @@ const App = () => {
     const handleDeleteMessages = async (ids) => { if (!ids.length) return; await SIMBackend.deleteMessages(ids); await refreshWorkspace(user); };
     const handleCreateUser = async (payload) => { await SIMBackend.createUser(payload); await refreshWorkspace(user); };
     const handleApproveUser = async (payload) => { await SIMBackend.approveUser(payload); await refreshWorkspace(user); };
+    const handleDeleteUser = async (userId) => { await SIMBackend.deleteUser(userId); await refreshWorkspace(user); };
+    const handleDeleteDocument = async (documentId) => { await SIMBackend.deleteDocument(documentId); await refreshWorkspace(user); };
 
     if (authLoading) return React.createElement(LoadingPage, null);
     if (!user) return React.createElement(LoginPage, { onLogin: handleLogin, onRegister: handleRegister });
@@ -216,9 +284,9 @@ const App = () => {
     };
     const currentCategory = bookmarkData.find(category => category.name === activeCategory);
     const displayContent = () => {
-        if (activeToolPage === 'contacts') return React.createElement(ContactsPage, { contactStore: contacts, onBack: goHome });
-        if (activeToolPage === 'documents') return React.createElement(DocumentsPage, { user, documents, uploadStatus, onRequestUpload: () => scheduleUploadRef.current?.click(), onOpen: SIMBackend.openDocument, onBack: goHome });
-        if (activeToolPage === 'users' && user.role === 'admin') return React.createElement(UserAdminPage, { profiles, pendingProfiles, onCreate: handleCreateUser, onApprove: handleApproveUser, onBack: goHome });
+        if (activeToolPage === 'contacts') return React.createElement(ContactsPage, { user, contactStore: contacts, uploadStatus: contactUploadStatus, onRequestUpload: () => contactUploadRef.current?.click(), onBack: goHome });
+        if (activeToolPage === 'documents') return React.createElement(DocumentsPage, { user, documents, uploadStatus, onRequestUpload: () => scheduleUploadRef.current?.click(), onOpen: SIMBackend.openDocument, onDelete: handleDeleteDocument, onBack: goHome });
+        if (activeToolPage === 'users' && user.role === 'admin') return React.createElement(UserAdminPage, { currentUser: user, profiles, pendingProfiles, onCreate: handleCreateUser, onApprove: handleApproveUser, onDelete: handleDeleteUser, onBack: goHome });
         if (searchTerm) return React.createElement(SearchResults, { searchTerm });
         if (currentFolder) return React.createElement(FolderView, { folder: currentFolder, onOpenFolder: openFolder, onBack: goBack });
         if (!currentCategory) return React.createElement('div', null, 'Categoria não encontrada');
@@ -230,8 +298,8 @@ const App = () => {
 
     const lineIcon = (paths) => React.createElement('svg', { className: 'top-line-icon', width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, paths);
     return React.createElement('div', { className: 'min-h-screen', style: { background: '#d1d5db' } }, [
-        React.createElement('input', { key: 'contact-upload', ref: contactUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.txt', onChange: handleContactUpload }),
-        React.createElement('input', { key: 'schedule-upload', ref: scheduleUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.pdf', onChange: handleScheduleUpload }),
+        user.role === 'admin' && React.createElement('input', { key: 'contact-upload', ref: contactUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.txt', onChange: handleContactUpload }),
+        user.role === 'admin' && React.createElement('input', { key: 'schedule-upload', ref: scheduleUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.pdf', onChange: handleScheduleUpload }),
         React.createElement('header', { key: 'header', className: 'sticky top-0 z-10 py-1' }, React.createElement('div', { className: 'top-shell' }, React.createElement('div', { className: 'flex flex-col md:flex-row md:items-center md:justify-between gap-4' }, [
             React.createElement('button', { key: 'brand', type: 'button', onClick: goHome, className: 'brand-home-btn flex items-center gap-3' }, [
                 React.createElement('div', { key: 'logo-wrap', className: 'w-12 h-12 flex items-center justify-center' }, React.createElement('img', { className: 'portal-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),
@@ -248,14 +316,7 @@ const App = () => {
                 ]),
                 React.createElement('button', { key: 'contacts', type: 'button', onClick: () => openToolPage('contacts'), className: 'header-btn header-icon-btn', title: 'Contatos', 'aria-label': 'Contatos' }, React.createElement(PhoneIcon, { size: 22, className: 'top-line-icon' })),
                 React.createElement('button', { key: 'documents', type: 'button', onClick: () => openToolPage('documents'), className: 'header-btn header-icon-btn', title: 'Escalas e documentos', 'aria-label': 'Escalas e documentos' }, lineIcon([React.createElement('path', { key: 'file', d: 'M6 3h8l4 4v14H6z' }), React.createElement('path', { key: 'fold', d: 'M14 3v5h5' }), React.createElement('path', { key: 'line', d: 'M9 13h6M9 17h6' })])),
-                user.role === 'admin' && React.createElement('div', { key: 'menu-wrap', ref: topMenuRef, className: 'top-menu-wrap' }, [
-                    React.createElement('button', { key: 'menu', type: 'button', onClick: () => setShowTopMenu(!showTopMenu), className: 'header-btn header-icon-btn', title: 'Administração', 'aria-label': 'Administração' }, lineIcon([React.createElement('path', { key: 'a', d: 'M5 7h14' }), React.createElement('path', { key: 'b', d: 'M5 12h14' }), React.createElement('path', { key: 'c', d: 'M5 17h14' })])),
-                    showTopMenu && React.createElement('div', { key: 'popover', className: 'top-menu-popover' }, [
-                        React.createElement('button', { key: 'schedule', type: 'button', className: 'top-menu-item', onClick: () => scheduleUploadRef.current?.click() }, 'Anexar planilha de escalonamento'),
-                        React.createElement('button', { key: 'users', type: 'button', className: 'top-menu-item', onClick: () => openToolPage('users') }, 'Gerenciar usuários'),
-                        React.createElement('button', { key: 'contacts-upload', type: 'button', className: 'top-menu-item', onClick: () => contactUploadRef.current?.click() }, 'Importar planilha de contatos')
-                    ])
-                ]),
+                user.role === 'admin' && React.createElement('button', { key: 'admin', type: 'button', onClick: () => openToolPage('users'), className: 'header-btn header-icon-btn', title: 'Gerenciar usuários', 'aria-label': 'Gerenciar usuários' }, React.createElement(ActionIcon, { name: 'Settings', size: 22, className: 'top-line-icon' })),
                 React.createElement('button', { key: 'messages', type: 'button', onClick: openMessageCenter, className: 'header-btn header-icon-btn', title: 'Mensagens', 'aria-label': 'Mensagens' }, [
                     React.createElement('img', { key: 'icon', className: 'top-image-icon', src: 'assets/icons/message-envelope.svg', alt: '' }),
                     notificationCount > 0 && React.createElement('span', { key: 'badge', className: 'notification-badge', 'aria-label': `${notificationCount} pendência(s)` })
@@ -267,7 +328,7 @@ const App = () => {
             backendError && React.createElement('p', { key: 'error', className: 'system-alert error mb-3' }, backendError),
             workspaceLoading && React.createElement('p', { key: 'loading', className: 'sync-status' }, 'Sincronizando...'),
             React.createElement('section', { key: 'tray', className: 'content-tray fade-in' }, displayContent()),
-            React.createElement('p', { key: 'signature', className: 'signature' }, 'Desenvolvido por N5923221')
+            React.createElement('p', { key: 'signature', className: 'signature' }, 'Desenvolvido por Kelly Lira e Nelson Leandro')
         ]),
         showMessages && React.createElement(MessageCenter, { key: 'messages-modal', user, profiles, messages, onSend: handleSendMessage, onConfirm: handleConfirmMessage, onDelete: handleDeleteMessages, onClose: () => setShowMessages(false) })
     ]);

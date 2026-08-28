@@ -10,6 +10,15 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 .secondary-action-btn { background: #fff; color: #991b1b; border: 1px solid #fecaca; }
 .secondary-action-btn:hover { background: #fff1f2; }
 .primary-action-btn:disabled, .secondary-action-btn:disabled { opacity: .55; cursor: wait; transform: none; }
+.icon-action-btn, .danger-icon-btn {
+    width: 38px; height: 38px; display: inline-grid; place-items: center; flex: 0 0 38px;
+    border-radius: 12px; font: inherit; cursor: pointer; transition: background .15s ease, color .15s ease, opacity .15s ease;
+}
+.icon-action-btn { border: 0; background: #dc2626; color: #fff; }
+.icon-action-btn:hover { background: #b91c1c; }
+.danger-icon-btn { border: 1px solid #fecaca; background: #fff; color: #b91c1c; }
+.danger-icon-btn:hover:not(:disabled) { background: #fff1f2; }
+.danger-icon-btn:disabled { opacity: .42; cursor: not-allowed; }
 .system-alert { padding: 10px 13px; border-radius: 12px; font-size: 13px; margin: 12px 0; }
 .system-alert.success { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
 .system-alert.error { color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; }
@@ -21,9 +30,11 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 .document-copy { flex: 1; min-width: 0; }
 .document-copy h3 { color: #1f2937; font-weight: 700; overflow-wrap: anywhere; }
 .document-copy p { color: #6b7280; font-size: 12px; margin-top: 3px; overflow-wrap: anywhere; }
+.document-actions { display: flex; align-items: center; gap: 8px; }
 .document-empty { padding: 46px 18px; text-align: center; color: #6b7280; border: 1px dashed #d1d5db; border-radius: 16px; }
 .user-create-form { display: grid; grid-template-columns: 1.2fr 1.2fr 1fr .7fr .8fr auto; gap: 9px; align-items: center; margin-bottom: 18px; padding: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; }
 .user-create-form .search-input { min-width: 0; }
+.create-user-icon-btn { width: 38px; height: 38px; padding: 0; display: grid; place-items: center; font-size: 23px; line-height: 1; }
 .member-row { padding: 11px 14px; }
 .member-row > :first-child { flex: 1; font-weight: 600; color: #374151; }
 .role-pill { border-radius: 999px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
@@ -57,6 +68,7 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 @media (max-width: 640px) {
     .page-heading-row, .document-card { align-items: flex-start; flex-direction: column; }
     .document-file-icon { display: none; }
+    .document-actions { width: 100%; }
     .user-create-form, .message-composer { grid-template-columns: 1fr; }
     .message-composer h3, .message-composer textarea, .teams-send-option { grid-column: 1; }
     .member-row { flex-wrap: wrap; }

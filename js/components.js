@@ -206,9 +206,21 @@ const PhoneIcon = ({ size = 26, className = '' }) => React.createElement('svg', 
     'aria-hidden': 'true'
 }, React.createElement('path', { d: 'M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.64a16 16 0 0 0 6.27 6.27l1.2-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92Z' }));
 
-const ContactsPage = ({ contactStore, onBack }) => {
+const ActionIcon = ({ name, size = 20, className = '' }) => {
+    const paths = {
+        Upload: ['M12 16V4', 'M7 9l5-5 5 5', 'M5 20h14'],
+        Trash: ['M4 7h16', 'M9 7V4h6v3', 'M7 7l1 13h8l1-13', 'M10 11v5M14 11v5'],
+        Settings: ['M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z', 'M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.12.38.33.73.6 1 .3.27.68.4 1.1.4h.09v4h-.09c-.42 0-.8.13-1.1.4-.27.27-.48.62-.6 1Z']
+    };
+    return React.createElement('svg', {
+        width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor',
+        strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', className, 'aria-hidden': 'true'
+    }, (paths[name] || []).map((path, index) => React.createElement('path', { key: index, d: path })));
+};
+
+const ContactsPage = ({ user, contactStore, uploadStatus, onRequestUpload, onBack }) => {
     const store = ensureContactStore(contactStore);
-    const [activeCluster, setActiveCluster] = React.useState('');
+    const [activeCluster, setActiveCluster] = React.useState(() => CONTACT_CLUSTERS.find(cluster => store.sheets?.[cluster]?.length) || '');
     const [activeArea, setActiveArea] = React.useState('');
     const [openNote, setOpenNote] = React.useState('');
     const sheetContacts = activeCluster ? (store.sheets?.[activeCluster] || []) : [];
@@ -225,6 +237,14 @@ const ContactsPage = ({ contactStore, onBack }) => {
     const areaOptions = usesAreaTabs ? Array.from(new Set(sheetContacts.map(contact => contact.area).filter(Boolean)))
         .filter(area => !(['NE', 'NO', 'CO', 'MG'].includes(activeCluster) && normalizeText(area) === normalizeText(activeCluster)))
         .sort((a, b) => areaSortWeight(a) - areaSortWeight(b)) : [];
+    React.useEffect(() => {
+        if (activeCluster && store.sheets?.[activeCluster]?.length) return;
+        const firstCluster = CONTACT_CLUSTERS.find(cluster => store.sheets?.[cluster]?.length) || '';
+        if (firstCluster !== activeCluster) {
+            setActiveCluster(firstCluster);
+            setActiveArea('');
+        }
+    }, [contactStore, activeCluster]);
     React.useEffect(() => {
         if (!usesAreaTabs) return;
         if (!areaOptions.length) {
@@ -298,10 +318,14 @@ const ContactsPage = ({ contactStore, onBack }) => {
         React.createElement('table', { className: 'contacts-table' }, [renderHeader(), renderRows(contacts, keyPrefix)])
     );
     return React.createElement('div', { className: 'tray-inner contacts-page fade-in' }, [
-        React.createElement('div', { key: 'nav', className: 'flex items-center gap-3' }, [
-            React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
-            React.createElement('h2', { key: 'title', className: 'text-xl text-gray-700' }, 'Contatos por cluster')
+        React.createElement('div', { key: 'nav', className: 'page-heading-row contacts-heading-row' }, [
+            React.createElement('div', { key: 'title-wrap', className: 'flex items-center gap-3' }, [
+                React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
+                React.createElement('h2', { key: 'title', className: 'text-xl text-gray-700' }, 'Contatos por cluster')
+            ]),
+            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'icon-action-btn', title: 'Importar planilha de contatos', 'aria-label': 'Importar planilha de contatos' }, React.createElement(ActionIcon, { name: 'Upload', size: 20 }))
         ]),
+        uploadStatus && React.createElement('p', { key: 'status', className: uploadStatus.type === 'error' ? 'system-alert error' : 'system-alert success' }, uploadStatus.text),
         React.createElement('div', { key: 'clusters', className: 'cluster-tabs' }, CONTACT_CLUSTERS.map(cluster => React.createElement('button', {
             key: cluster,
             type: 'button',
@@ -321,8 +345,9 @@ const ContactsPage = ({ contactStore, onBack }) => {
     ]);
 };
 
-const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen, onBack }) => {
+const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen, onDelete, onBack }) => {
     const [openingId, setOpeningId] = React.useState('');
+    const [deletingId, setDeletingId] = React.useState('');
     const [error, setError] = React.useState('');
     const openFile = async (document) => {
         setOpeningId(document.id);
@@ -330,6 +355,14 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
         try { await onOpen(document); }
         catch (openError) { setError(openError.message || 'Não foi possível abrir o arquivo.'); }
         finally { setOpeningId(''); }
+    };
+    const deleteFile = async (document) => {
+        if (!window.confirm(`Excluir "${document.file_name}"? O arquivo será removido para todos os usuários.`)) return;
+        setDeletingId(document.id);
+        setError('');
+        try { await onDelete(document.id); }
+        catch (deleteError) { setError(deleteError.message || 'Não foi possível excluir o arquivo.'); }
+        finally { setDeletingId(''); }
     };
     const formatSize = (bytes) => bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`;
     return React.createElement('div', { className: 'tray-inner documents-page fade-in' }, [
@@ -341,7 +374,7 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
                     React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Arquivos publicados pela administração para toda a equipe.')
                 ])
             ]),
-            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'primary-action-btn' }, 'Anexar planilha')
+            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'icon-action-btn', title: 'Anexar planilha', 'aria-label': 'Anexar planilha' }, React.createElement(ActionIcon, { name: 'Upload', size: 20 }))
         ]),
         uploadStatus && React.createElement('p', { key: 'status', className: uploadStatus.type === 'error' ? 'system-alert error' : 'system-alert success' }, uploadStatus.text),
         error && React.createElement('p', { key: 'error', className: 'system-alert error' }, error),
@@ -352,16 +385,25 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
                     React.createElement('h3', { key: 'title' }, document.title),
                     React.createElement('p', { key: 'meta' }, `${document.file_name} • ${formatSize(document.size_bytes)} • ${new Date(document.created_at).toLocaleString('pt-BR')}`)
                 ]),
-                React.createElement('button', { key: 'open', type: 'button', disabled: openingId === document.id, onClick: () => openFile(document), className: 'secondary-action-btn' }, openingId === document.id ? 'Abrindo...' : 'Abrir')
+                React.createElement('div', { key: 'actions', className: 'document-actions' }, [
+                    React.createElement('button', { key: 'open', type: 'button', disabled: openingId === document.id || deletingId === document.id, onClick: () => openFile(document), className: 'secondary-action-btn' }, openingId === document.id ? 'Abrindo...' : 'Abrir'),
+                    user.role === 'admin' && React.createElement('button', { key: 'delete', type: 'button', disabled: !!deletingId, onClick: () => deleteFile(document), className: 'danger-icon-btn', title: 'Excluir documento', 'aria-label': `Excluir ${document.file_name}` }, deletingId === document.id ? '…' : React.createElement(ActionIcon, { name: 'Trash', size: 18 }))
+                ])
             ])))
     ]);
 };
 
-const UserAdminPage = ({ profiles, pendingProfiles = [], onCreate, onApprove, onBack }) => {
+const UserAdminPage = ({ currentUser, profiles, pendingProfiles = [], onCreate, onApprove, onDelete, onBack }) => {
     const [form, setForm] = React.useState({ displayName: '', email: '', password: '', role: 'user', groupId: 'residencial' });
     const [status, setStatus] = React.useState(null);
     const [loading, setLoading] = React.useState(false);
     const [approvingId, setApprovingId] = React.useState('');
+    const [deletingId, setDeletingId] = React.useState('');
+    const formatGroupName = (group) => normalizeText(group) === 'residencial' ? 'Residencial' : String(group || '');
+    const orderedProfiles = [...profiles].sort((a, b) => {
+        if (a.role !== b.role) return a.role === 'admin' ? 1 : -1;
+        return a.displayName.localeCompare(b.displayName, 'pt-BR');
+    });
     const update = (field) => (event) => setForm(previous => ({ ...previous, [field]: event.target.value }));
     const submit = async (event) => {
         event.preventDefault();
@@ -385,6 +427,18 @@ const UserAdminPage = ({ profiles, pendingProfiles = [], onCreate, onApprove, on
             setStatus({ type: 'error', text: approveError.message || 'Não foi possível aprovar o usuário.' });
         } finally { setApprovingId(''); }
     };
+    const remove = async (profile) => {
+        if (profile.id === currentUser.id) return;
+        if (!window.confirm(`Excluir o acesso de ${profile.displayName} ao SIM?`)) return;
+        setDeletingId(profile.id);
+        setStatus(null);
+        try {
+            await onDelete(profile.id);
+            setStatus({ type: 'success', text: `${profile.displayName} não tem mais acesso ao SIM.` });
+        } catch (deleteError) {
+            setStatus({ type: 'error', text: deleteError.message || 'Não foi possível excluir o usuário.' });
+        } finally { setDeletingId(''); }
+    };
     return React.createElement('div', { className: 'tray-inner user-admin-page fade-in' }, [
         React.createElement('div', { key: 'nav', className: 'flex items-center gap-3 mb-5' }, [
             React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
@@ -405,26 +459,34 @@ const UserAdminPage = ({ profiles, pendingProfiles = [], onCreate, onApprove, on
                         React.createElement('strong', { key: 'name' }, profile.displayName),
                         React.createElement('span', { key: 'email' }, profile.email || 'E-mail não disponível')
                     ]),
-                    React.createElement('span', { key: 'group', className: 'member-group' }, profile.group),
+                    React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
                     React.createElement('button', { key: 'approve', type: 'button', disabled: !!approvingId, className: 'approve-user-btn', onClick: () => approve(profile) }, approvingId === profile.id ? 'Aprovando...' : 'Aprovar')
                 ])))
         ]),
         React.createElement('form', { key: 'form', onSubmit: submit, className: 'user-create-form' }, [
             React.createElement('input', { key: 'name', required: true, maxLength: 120, className: 'search-input', placeholder: 'Nome completo', value: form.displayName, onChange: update('displayName') }),
             React.createElement('input', { key: 'email', required: true, type: 'email', autoComplete: 'off', className: 'search-input', placeholder: 'E-mail corporativo', value: form.email, onChange: update('email') }),
-            React.createElement('input', { key: 'password', required: true, minLength: 12, type: 'password', autoComplete: 'new-password', className: 'search-input', placeholder: 'Senha inicial (mínimo 12 caracteres)', value: form.password, onChange: update('password') }),
+            React.createElement('input', { key: 'password', required: true, minLength: 8, type: 'password', autoComplete: 'new-password', className: 'search-input', placeholder: 'claro123', value: form.password, onChange: update('password') }),
             React.createElement('select', { key: 'role', className: 'search-input', value: form.role, onChange: update('role') }, [
                 React.createElement('option', { key: 'user', value: 'user' }, 'Usuário'),
                 React.createElement('option', { key: 'admin', value: 'admin' }, 'Administrador')
             ]),
             React.createElement('input', { key: 'group', required: true, maxLength: 80, className: 'search-input', placeholder: 'Grupo', value: form.groupId, onChange: update('groupId') }),
-            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn' }, loading ? 'Criando...' : 'Criar usuário')
+            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn create-user-icon-btn', title: 'Criar usuário', 'aria-label': 'Criar usuário' }, loading ? '…' : '+')
         ]),
         status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
-        React.createElement('div', { key: 'members', className: 'member-list' }, profiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
+        React.createElement('div', { key: 'members', className: 'member-list' }, orderedProfiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
             React.createElement('span', { key: 'name' }, profile.displayName),
             React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Admin' : 'Usuário'),
-            React.createElement('span', { key: 'group', className: 'member-group' }, profile.group)
+            React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
+            React.createElement('button', {
+                key: 'delete', type: 'button',
+                disabled: profile.id === currentUser.id || !!deletingId,
+                onClick: () => remove(profile),
+                className: 'danger-icon-btn',
+                title: profile.id === currentUser.id ? 'Você não pode excluir a própria conta' : 'Excluir usuário',
+                'aria-label': profile.id === currentUser.id ? 'Não é possível excluir sua própria conta' : `Excluir ${profile.displayName}`
+            }, deletingId === profile.id ? '…' : React.createElement(ActionIcon, { name: 'Trash', size: 17 }))
         ])))
     ]);
 };
@@ -439,8 +501,9 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
     const [loadingId, setLoadingId] = React.useState('');
     const [selected, setSelected] = React.useState([]);
     const [deleteMode, setDeleteMode] = React.useState(false);
-    const profileMap = new Map(profiles.map(profile => [profile.id, profile]));
-    const groups = Array.from(new Set(profiles.map(profile => profile.group).filter(Boolean)));
+    const recipientProfiles = profiles.filter(profile => profile.role !== 'admin');
+    const profileMap = new Map(recipientProfiles.map(profile => [profile.id, profile]));
+    const groups = Array.from(new Set(recipientProfiles.map(profile => profile.group).filter(Boolean)));
     const isTeamsAvailable = (value) => value === 'todos' || String(value).startsWith('group:') || teamsLoginIds.has(profileMap.get(value)?.loginId);
     const teamsAvailable = isTeamsAvailable(target);
     const targetLabel = (value) => value === 'todos' ? 'Todos' : (String(value).startsWith('group:') ? `Grupo ${String(value).slice(6)}` : (profileMap.get(value)?.displayName || 'Usuário'));
@@ -491,7 +554,7 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
                 React.createElement('select', { key: 'target', className: 'search-input', value: target, onChange: event => { const nextTarget = event.target.value; setTarget(nextTarget); if (!isTeamsAvailable(nextTarget)) setSendToTeams(false); } }, [
                     React.createElement('option', { key: 'all', value: 'todos' }, 'Todos os usuários'),
                     ...groups.map(group => React.createElement('option', { key: `group-${group}`, value: `group:${group}` }, `Grupo ${group}`)),
-                    ...profiles.map(profile => React.createElement('option', { key: profile.id, value: profile.id }, profile.displayName))
+                    ...recipientProfiles.map(profile => React.createElement('option', { key: profile.id, value: profile.id }, profile.displayName))
                 ]),
                 React.createElement('input', { key: 'title', maxLength: 160, className: 'search-input', placeholder: 'Título', value: title, onChange: event => setTitle(event.target.value) }),
                 React.createElement('textarea', { key: 'body', maxLength: 5000, rows: 3, className: 'search-input', placeholder: 'Mensagem', value: text, onChange: event => setText(event.target.value) }),

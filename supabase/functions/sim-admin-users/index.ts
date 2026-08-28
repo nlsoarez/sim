@@ -2,7 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.112.3";
 import { corsHeaders } from "jsr:@supabase/supabase-js@2/cors";
 
-type CreateUserPayload = {
+type AdminUserPayload = {
   action?: unknown;
   userId?: unknown;
   email?: unknown;
@@ -46,13 +46,55 @@ Deno.serve(async (request: Request) => {
       .eq("must_change_password", false)
       .maybeSingle();
     if (profileError) throw profileError;
-    if (!adminProfile) return json({ error: "Apenas administradores podem criar usuários." }, 403);
+    if (!adminProfile) return json({ error: "Apenas administradores podem gerenciar usuários." }, 403);
 
-    const payload = await request.json() as CreateUserPayload;
+    const payload = await request.json() as AdminUserPayload;
     const action = String(payload.action ?? "create");
     const adminClient = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
+
+    if (action === "delete") {
+      const userId = String(payload.userId ?? "");
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId)) {
+        return json({ error: "Usuário inválido." }, 400);
+      }
+      if (userId === authData.user.id) {
+        return json({ error: "Você não pode excluir a própria conta." }, 409);
+      }
+
+      const { data: targetProfile, error: targetError } = await adminClient
+        .from("sim_profiles")
+        .select("user_id, display_name, role, active")
+        .eq("user_id", userId)
+        .eq("active", true)
+        .maybeSingle();
+      if (targetError) throw targetError;
+      if (!targetProfile) return json({ error: "Usuário ativo não encontrado." }, 404);
+
+      if (targetProfile.role === "admin") {
+        const { count, error: countError } = await adminClient
+          .from("sim_profiles")
+          .select("user_id", { count: "exact", head: true })
+          .eq("role", "admin")
+          .eq("active", true);
+        if (countError) throw countError;
+        if ((count ?? 0) <= 1) {
+          return json({ error: "O último administrador ativo não pode ser excluído." }, 409);
+        }
+      }
+
+      const { data: deactivated, error: deactivateError } = await adminClient
+        .from("sim_profiles")
+        .update({ active: false, role: "user", updated_at: new Date().toISOString() })
+        .eq("user_id", userId)
+        .eq("active", true)
+        .select("user_id, display_name, role, group_id, active, must_change_password")
+        .maybeSingle();
+      if (deactivateError) throw deactivateError;
+      if (!deactivated) return json({ error: "Usuário ativo não encontrado." }, 404);
+      return json({ user: deactivated });
+    }
 
     if (action === "approve") {
       const userId = String(payload.userId ?? "");
@@ -95,7 +137,9 @@ Deno.serve(async (request: Request) => {
     const groupId = String(payload.groupId ?? "residencial").trim().toLowerCase();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "E-mail inválido." }, 400);
-    if (password.length < 12) return json({ error: "A senha inicial deve ter pelo menos 12 caracteres." }, 400);
+    if (password !== "claro123" && password.length < 12) {
+      return json({ error: "Use a senha padrão claro123 ou uma senha inicial com pelo menos 12 caracteres." }, 400);
+    }
     if (!displayName || displayName.length > 120) return json({ error: "Nome inválido." }, 400);
     if (!['admin', 'user'].includes(role)) return json({ error: "Perfil de acesso inválido." }, 400);
     if (!groupId || groupId.length > 80) return json({ error: "Grupo inválido." }, 400);
@@ -143,6 +187,6 @@ Deno.serve(async (request: Request) => {
     }, 201);
   } catch (error) {
     console.error("sim-admin-users", error);
-    return json({ error: "Falha interna ao criar usuário." }, 500);
+    return json({ error: "Falha interna ao gerenciar usuário." }, 500);
   }
 });

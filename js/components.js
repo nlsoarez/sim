@@ -430,24 +430,29 @@ const UserAdminPage = ({ profiles, pendingProfiles = [], onCreate, onApprove, on
 };
 
 const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, onClose }) => {
+    const teamsLoginIds = new Set(['N0238475', 'N5923221', 'N5772086', 'N0239871', 'F104752', 'N5972428', 'N4014011', 'F106664']);
     const [target, setTarget] = React.useState('todos');
     const [title, setTitle] = React.useState('');
     const [text, setText] = React.useState('');
+    const [sendToTeams, setSendToTeams] = React.useState(false);
     const [status, setStatus] = React.useState(null);
     const [loadingId, setLoadingId] = React.useState('');
     const [selected, setSelected] = React.useState([]);
     const [deleteMode, setDeleteMode] = React.useState(false);
     const profileMap = new Map(profiles.map(profile => [profile.id, profile]));
     const groups = Array.from(new Set(profiles.map(profile => profile.group).filter(Boolean)));
+    const isTeamsAvailable = (value) => value === 'todos' || String(value).startsWith('group:') || teamsLoginIds.has(profileMap.get(value)?.loginId);
+    const teamsAvailable = isTeamsAvailable(target);
     const targetLabel = (value) => value === 'todos' ? 'Todos' : (String(value).startsWith('group:') ? `Grupo ${String(value).slice(6)}` : (profileMap.get(value)?.displayName || 'Usuário'));
     const send = async () => {
         if (!title.trim()) return setStatus({ type: 'error', text: 'Informe o título da mensagem.' });
         setLoadingId('send'); setStatus(null);
         try {
-            await onSend({ target, title, text });
+            const result = await onSend({ target, title, text, sendToTeams });
             setTitle(''); setText('');
-            setStatus({ type: 'success', text: 'Mensagem enviada e armazenada com sucesso.' });
-        } catch (sendError) { setStatus({ type: 'error', text: sendError.message || 'Falha ao enviar.' }); }
+            setSendToTeams(false);
+            setStatus({ type: 'success', text: result?.teamsSent ? 'Mensagem enviada no SIM e no Teams.' : 'Mensagem enviada e armazenada no SIM.' });
+        } catch (sendError) { setStatus({ type: sendError.internalSaved ? 'warning' : 'error', text: sendError.message || 'Falha ao enviar.' }); }
         finally { setLoadingId(''); }
     };
     const confirm = async (message) => {
@@ -480,16 +485,20 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
                     React.createElement('button', { key: 'close', type: 'button', onClick: onClose, className: 'header-btn', 'aria-label': 'Fechar' }, '×')
                 ])
             ]),
-            status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
+            status && React.createElement('p', { key: 'status', className: `system-alert ${status.type}` }, status.text),
             user.role === 'admin' && React.createElement('section', { key: 'composer', className: 'message-composer' }, [
                 React.createElement('h3', { key: 'heading' }, 'Enviar mensagem'),
-                React.createElement('select', { key: 'target', className: 'search-input', value: target, onChange: event => setTarget(event.target.value) }, [
+                React.createElement('select', { key: 'target', className: 'search-input', value: target, onChange: event => { const nextTarget = event.target.value; setTarget(nextTarget); if (!isTeamsAvailable(nextTarget)) setSendToTeams(false); } }, [
                     React.createElement('option', { key: 'all', value: 'todos' }, 'Todos os usuários'),
                     ...groups.map(group => React.createElement('option', { key: `group-${group}`, value: `group:${group}` }, `Grupo ${group}`)),
                     ...profiles.map(profile => React.createElement('option', { key: profile.id, value: profile.id }, profile.displayName))
                 ]),
                 React.createElement('input', { key: 'title', maxLength: 160, className: 'search-input', placeholder: 'Título', value: title, onChange: event => setTitle(event.target.value) }),
                 React.createElement('textarea', { key: 'body', maxLength: 5000, rows: 3, className: 'search-input', placeholder: 'Mensagem', value: text, onChange: event => setText(event.target.value) }),
+                React.createElement('label', { key: 'teams', className: `teams-send-option ${teamsAvailable ? '' : 'disabled'}` }, [
+                    React.createElement('input', { key: 'checkbox', type: 'checkbox', checked: sendToTeams, disabled: !teamsAvailable, onChange: event => setSendToTeams(event.target.checked) }),
+                    React.createElement('span', { key: 'label' }, teamsAvailable ? 'Enviar também no Microsoft Teams' : 'Teams indisponível para este usuário (webhook não configurado)')
+                ]),
                 React.createElement('button', { key: 'send', type: 'button', disabled: loadingId === 'send', onClick: send, className: 'primary-action-btn' }, loadingId === 'send' ? 'Enviando...' : 'Enviar mensagem')
             ]),
             user.role === 'admin' && deleteMode && React.createElement('div', { key: 'delete-bar', className: 'delete-bar' }, [

@@ -13,6 +13,7 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 .system-alert { padding: 10px 13px; border-radius: 12px; font-size: 13px; margin: 12px 0; }
 .system-alert.success { color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; }
 .system-alert.error { color: #991b1b; background: #fff1f2; border: 1px solid #fecdd3; }
+.system-alert.warning { color: #92400e; background: #fffbeb; border: 1px solid #fde68a; }
 .sync-status { max-width: 1040px; margin: 0 auto 8px; color: #6b7280; font-size: 12px; text-align: right; }
 .document-list, .member-list { display: grid; gap: 10px; }
 .document-card, .member-row { display: flex; align-items: center; gap: 13px; border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; padding: 14px; }
@@ -45,6 +46,9 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 .message-composer h3 { grid-column: 1 / -1; font-size: 14px; font-weight: 700; color: #374151; }
 .message-composer textarea { grid-column: 1 / -1; resize: vertical; }
 .message-composer .primary-action-btn { justify-self: start; }
+.teams-send-option { grid-column: 1 / -1; display: flex; align-items: center; gap: 9px; color: #374151; font-size: 13px; font-weight: 700; cursor: pointer; }
+.teams-send-option input { width: 17px; height: 17px; accent-color: #b91c1c; }
+.teams-send-option.disabled { color: #9ca3af; cursor: not-allowed; }
 
 @media (max-width: 900px) {
     .user-create-form { grid-template-columns: 1fr 1fr; }
@@ -54,7 +58,7 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
     .page-heading-row, .document-card { align-items: flex-start; flex-direction: column; }
     .document-file-icon { display: none; }
     .user-create-form, .message-composer { grid-template-columns: 1fr; }
-    .message-composer h3, .message-composer textarea { grid-column: 1; }
+    .message-composer h3, .message-composer textarea, .teams-send-option { grid-column: 1; }
     .member-row { flex-wrap: wrap; }
 }
 .app-card, .folder-card {

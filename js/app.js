@@ -181,7 +181,19 @@ const App = () => {
         finally { event.target.value = ''; }
     };
 
-    const handleSendMessage = async (payload) => { await SIMBackend.sendMessage(payload); await refreshWorkspace(user); };
+    const handleSendMessage = async (payload) => {
+        await SIMBackend.sendMessage(payload);
+        try {
+            if (payload.sendToTeams) await SIMBackend.sendTeamsMessage(payload);
+        } catch (teamsError) {
+            await refreshWorkspace(user);
+            const error = new Error(`Mensagem salva no SIM, mas o Teams falhou: ${teamsError.message}`);
+            error.internalSaved = true;
+            throw error;
+        }
+        await refreshWorkspace(user);
+        return { teamsSent: Boolean(payload.sendToTeams) };
+    };
     const handleConfirmMessage = async (messageId) => { await SIMBackend.confirmMessage(messageId); await refreshWorkspace(user); };
     const handleDeleteMessages = async (ids) => { if (!ids.length) return; await SIMBackend.deleteMessages(ids); await refreshWorkspace(user); };
     const handleCreateUser = async (payload) => { await SIMBackend.createUser(payload); await refreshWorkspace(user); };

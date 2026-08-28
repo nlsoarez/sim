@@ -14,7 +14,7 @@
         id: profile.user_id,
         username: profile.user_id,
         email,
-        displayName: profile.display_name,
+        displayName: profile.role === 'admin' ? String(profile.display_name || '').toLocaleUpperCase('pt-BR') : profile.display_name,
         loginId: profile.login_id || '',
         role: profile.role,
         group: profile.group_id,
@@ -58,7 +58,7 @@
         const profile = await getProfile(data.user);
         if (!profile?.active) {
             await client.auth.signOut();
-            throw new Error(profile ? 'Seu cadastro aguarda aprovação de um administrador.' : 'Sua conta não tem acesso ao SIM.');
+            throw new Error(profile ? 'Seu acesso ao SIM está desativado. Procure um perfil Adm.' : 'Sua conta não tem acesso ao SIM.');
         }
         return profile;
     };
@@ -77,27 +77,6 @@
             throw new Error('A senha foi alterada, mas o acesso ainda não foi liberado. Entre novamente.');
         }
         return profile;
-    };
-
-    const signUp = async ({ displayName, email, password }) => {
-        const normalizedName = String(displayName || '').trim();
-        const normalizedEmail = String(email || '').trim().toLowerCase();
-        if (!normalizedName || normalizedName.length > 120) throw new Error('Informe um nome válido.');
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) throw new Error('Informe um e-mail válido.');
-        if (String(password || '').length < 12) throw new Error('A senha deve ter pelo menos 12 caracteres.');
-
-        const redirectPath = `${window.location.origin}${window.location.pathname}`;
-        const { data, error } = await client.auth.signUp({
-            email: normalizedEmail,
-            password,
-            options: {
-                emailRedirectTo: redirectPath,
-                data: { display_name: normalizedName, group_id: 'residencial' }
-            }
-        });
-        if (error) throw new Error(error.message || 'Não foi possível enviar o cadastro.');
-        if (data.session) await client.auth.signOut();
-        return { emailConfirmationRequired: !data.session };
     };
 
     const listProfiles = async () => {
@@ -131,7 +110,7 @@
         return messages.map(message => ({
             id: message.id,
             senderId: message.sender_id,
-            from: profileMap.get(message.sender_id)?.displayName || 'Administrador',
+            from: profileMap.get(message.sender_id)?.displayName || 'Adm',
             to: message.target_type === 'all' ? 'todos' : (message.target_type === 'group' ? `group:${message.target_group}` : message.target_user_id),
             targetType: message.target_type,
             targetUserId: message.target_user_id,
@@ -330,7 +309,7 @@
     };
 
     window.SIMBackend = {
-        getCurrentUser, signIn, signUp, changeInitialPassword, signOut: () => client.auth.signOut(), onAuthStateChange,
+        getCurrentUser, signIn, changeInitialPassword, signOut: () => client.auth.signOut(), onAuthStateChange,
         listProfiles, listPendingProfiles, listMessages, sendMessage, sendTeamsMessage, confirmMessage, deleteMessages,
         listDocuments, uploadDocument, openDocument, deleteDocument,
         getContactDirectory, saveContactDirectory,

@@ -46,7 +46,7 @@ Deno.serve(async (request: Request) => {
       .eq("must_change_password", false)
       .maybeSingle();
     if (profileError) throw profileError;
-    if (!adminProfile) return json({ error: "Apenas administradores podem gerenciar usuários." }, 403);
+    if (!adminProfile) return json({ error: "Apenas perfis Adm podem gerenciar usuários." }, 403);
 
     const payload = await request.json() as AdminUserPayload;
     const action = String(payload.action ?? "create");
@@ -80,7 +80,7 @@ Deno.serve(async (request: Request) => {
           .eq("active", true);
         if (countError) throw countError;
         if ((count ?? 0) <= 1) {
-          return json({ error: "O último administrador ativo não pode ser excluído." }, 409);
+          return json({ error: "O último perfil Adm ativo não pode ser excluído." }, 409);
         }
       }
 

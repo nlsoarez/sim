@@ -5,27 +5,25 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 ## O que está implementado
 
 - Login real por e-mail e senha (Supabase Auth).
-- Perfis `admin` e `user`, protegidos por Row Level Security (RLS).
-- Cadastro público com validação obrigatória por um administrador.
-- Administração de usuários pelo próprio portal. Apenas administradores podem aprovar contas ou criar acesso imediato.
+- Perfis internos `admin` e `user`, protegidos por Row Level Security (RLS), exibidos como **Adm** e **User**.
+- Cadastro de usuários exclusivamente por um perfil Adm autenticado.
+- Gestão de usuários pelo próprio portal, protegida no backend.
 - Depósito privado para planilhas de escalonamento e PDFs, com limite de 20 MB.
 - Diretório de contatos por cluster persistido e compartilhado entre todos os usuários ativos.
 - Central de mensagens persistente, com envio para todos, grupo ou usuário.
 - Envio opcional da mesma mensagem ao Microsoft Teams, sem interromper ou substituir o registro interno.
-- Confirmação de leitura e relatório imprimível/PDF para administradores.
+- Confirmação de leitura e relatório imprimível/PDF para perfis Adm.
 - Atualização em tempo real de mensagens, confirmações e documentos.
 
 ## Acesso inicial
 
-As contas já existentes de Nelson e Kelly foram associadas ao SIM como administradores. As senhas continuam gerenciadas pelo Supabase e não ficam no repositório.
+As contas já existentes de Nelson e Kelly foram associadas ao SIM como perfis Adm. As senhas continuam gerenciadas pelo Supabase e não ficam no repositório.
 
-Na tela inicial, a opção **Cadastrar** cria uma solicitação com nome, e-mail e senha. A senha precisa ter pelo menos 12 caracteres. O solicitante continua sem acesso aos arquivos e mensagens até a validação administrativa. Ao aprovar, o administrador também valida o e-mail da conta.
-
-Depois de entrar, um administrador usa o ícone de engrenagem **Gerenciar usuários** e seleciona **Aprovar** na seção **Cadastros aguardando validação**. O administrador também pode criar uma conta com acesso imediato pelo formulário da mesma página.
+Depois de entrar, um perfil Adm usa o ícone de engrenagem **Gerenciar usuários** para criar uma conta com acesso imediato. A senha inicial padrão pode ser `claro123` e deve ser alterada no primeiro acesso.
 
 ## Publicar planilhas
 
-Um administrador abre **Escalas e documentos** e usa o ícone de upload. O arquivo é armazenado no bucket privado `sim-documents` e aparece na mesma página para todos os membros ativos.
+Um perfil Adm abre **Documentos** e usa o ícone de upload. O arquivo é armazenado no bucket privado `sim-documents` e aparece na mesma página para todos os membros ativos.
 
 Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 

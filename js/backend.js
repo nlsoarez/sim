@@ -15,6 +15,7 @@
         username: profile.user_id,
         email,
         displayName: profile.display_name,
+        loginId: profile.login_id || '',
         role: profile.role,
         group: profile.group_id,
         active: profile.active,
@@ -159,6 +160,21 @@
         requireData(await client.from('sim_messages').insert(row));
     };
 
+    const sendTeamsMessage = async ({ target, title, text }) => {
+        const { data, error } = await client.functions.invoke('sim-teams-message', {
+            body: { target, title: title.trim(), text: text.trim() }
+        });
+        if (error) {
+            let message = 'Não foi possível enviar a mensagem ao Teams.';
+            try {
+                const body = await error.context?.json();
+                if (body?.error) message = body.error;
+            } catch (_) { /* response body may already be consumed */ }
+            throw new Error(message);
+        }
+        return data;
+    };
+
     const confirmMessage = async (messageId) => {
         const { data: authData, error: authError } = await client.auth.getUser();
         if (authError || !authData.user) throw authError || new Error('Sessão inválida.');
@@ -252,7 +268,7 @@
 
     window.SIMBackend = {
         getCurrentUser, signIn, signUp, changeInitialPassword, signOut: () => client.auth.signOut(), onAuthStateChange,
-        listProfiles, listPendingProfiles, listMessages, sendMessage, confirmMessage, deleteMessages,
+        listProfiles, listPendingProfiles, listMessages, sendMessage, sendTeamsMessage, confirmMessage, deleteMessages,
         listDocuments, uploadDocument, openDocument, createUser, approveUser, subscribe
     };
 })();

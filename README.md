@@ -10,6 +10,7 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 - Administração de usuários pelo próprio portal. Apenas administradores podem aprovar contas ou criar acesso imediato.
 - Depósito privado para planilhas de escalonamento e PDFs, com limite de 20 MB.
 - Central de mensagens persistente, com envio para todos, grupo ou usuário.
+- Envio opcional da mesma mensagem ao Microsoft Teams, sem interromper ou substituir o registro interno.
 - Confirmação de leitura e relatório imprimível/PDF para administradores.
 - Atualização em tempo real de mensagens, confirmações e documentos.
 
@@ -32,6 +33,7 @@ Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 - Projeto Supabase: `divisao-equipe-madrugada` (`aaxdcpftynjphzitigrv`).
 - Migrações versionadas em `supabase/migrations/`, incluindo o backend multiusuário, cadastro com aprovação e índices relacionados.
 - Função de criação de usuários: `supabase/functions/sim-admin-users/index.ts`.
+- Função protegida de envio ao Teams: `supabase/functions/sim-teams-message/index.ts`. Os webhooks ficam em segredo de ambiente e nunca são publicados no GitHub Pages.
 - A chave presente no JavaScript é uma chave **publicável**, própria para clientes web. Nenhuma chave secreta ou `service_role` é enviada ao navegador.
 - O bucket é privado. Download, upload e metadados dependem de sessão válida e políticas RLS.
 

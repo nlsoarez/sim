@@ -22,12 +22,6 @@
         mustChangePassword: Boolean(profile.must_change_password)
     }) : null;
 
-    const normalizeLoginIdentifier = (identifier) => {
-        const normalized = String(identifier || '').trim().toLowerCase();
-        if (/^[a-z]\d{6,7}$/.test(normalized)) return `${normalized}@sim.invalid`;
-        return normalized;
-    };
-
     const requireData = (result) => {
         if (result.error) throw result.error;
         return result.data;
@@ -52,9 +46,17 @@
     };
 
     const signIn = async (identifier, password) => {
-        const email = normalizeLoginIdentifier(identifier);
-        const { data, error } = await client.auth.signInWithPassword({ email, password });
-        if (error) throw new Error('Matrícula/e-mail ou senha inválidos.');
+        const { data: loginData, error: loginError } = await client.functions.invoke('sim-login', {
+            body: { identifier: String(identifier || '').trim(), password: String(password || '') }
+        });
+        if (loginError || !loginData?.accessToken || !loginData?.refreshToken) {
+            throw new Error('Matrícula/e-mail ou senha inválidos.');
+        }
+        const { data, error } = await client.auth.setSession({
+            access_token: loginData.accessToken,
+            refresh_token: loginData.refreshToken
+        });
+        if (error || !data.user) throw new Error('Matrícula/e-mail ou senha inválidos.');
         const profile = await getProfile(data.user);
         if (!profile?.active) {
             await client.auth.signOut();

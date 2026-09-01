@@ -42,10 +42,23 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
 .role-pill.admin { background: #fee2e2; color: #991b1b; }
 .role-pill.user { background: #e0f2fe; color: #075985; }
 .member-group { color: #6b7280; font-size: 12px; min-width: 90px; text-align: right; }
+.user-admin-page { display: flex; flex-direction: column; max-height: calc(100vh - 210px); overflow: hidden; }
+.user-admin-header { flex: 0 0 auto; background: #ffffff; border-bottom: 1px solid #eef2f7; padding-bottom: 14px; position: relative; z-index: 2; }
+.user-admin-scroll { min-height: 0; overflow-y: auto; padding: 14px 4px 2px 0; scrollbar-gutter: stable; }
 .message-composer { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; padding: 14px; margin-bottom: 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; }
 .message-composer h3 { grid-column: 1 / -1; font-size: 14px; font-weight: 700; color: #374151; }
 .message-composer textarea { grid-column: 1 / -1; resize: vertical; }
 .message-composer .primary-action-btn { justify-self: start; }
+.message-recipient-panel { grid-column: 1 / -1; border: 1px solid #e5e7eb; border-radius: 14px; background: #ffffff; padding: 11px; }
+.message-recipient-title { color: #475569; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+.message-recipient-groups { display: grid; gap: 6px; margin-bottom: 7px; }
+.message-recipient-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px 9px; border-top: 1px solid #eef2f7; padding-top: 7px; }
+.message-recipient-option { display: flex; align-items: center; gap: 7px; min-width: 0; color: #475569; cursor: pointer; padding: 4px 5px; border-radius: 8px; }
+.message-recipient-option:hover { background: #fff5f5; color: #991b1b; }
+.message-recipient-option input { width: 15px; height: 15px; flex: 0 0 15px; accent-color: #dc2626; }
+.message-recipient-option .recipient-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; line-height: 1.25; }
+.message-recipient-option small { color: #94a3b8; font-size: 10px; margin-left: auto; }
+.message-recipient-option.group-option { background: #fff7f7; color: #991b1b; font-weight: 700; }
 .teams-send-option { grid-column: 1 / -1; display: flex; align-items: center; gap: 9px; color: #374151; font-size: 13px; font-weight: 700; cursor: pointer; }
 .teams-send-option input { width: 17px; height: 17px; accent-color: #b91c1c; }
 .teams-send-option.disabled { color: #9ca3af; cursor: not-allowed; }
@@ -59,7 +72,8 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
     .document-file-icon { display: none; }
     .document-actions { width: 100%; }
     .user-create-form, .message-composer { grid-template-columns: 1fr; }
-    .message-composer h3, .message-composer textarea, .teams-send-option { grid-column: 1; }
+    .message-composer h3, .message-composer textarea, .message-recipient-panel, .teams-send-option { grid-column: 1; }
+    .message-recipient-list { grid-template-columns: 1fr; }
     .member-row { flex-wrap: wrap; }
 }
 .app-card, .folder-card {
@@ -446,7 +460,7 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
     font-weight: 700;
     margin-top: 10px;
 }
-.message-list { max-height: min(560px, 62vh); }
+.message-list { max-height: none; }
 .message-summary-card {
     border: 1px solid #e5e7eb;
     border-radius: 16px;
@@ -512,6 +526,9 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
     line-height: 1.45;
 }
 .modal-header-actions { display: flex; align-items: center; gap: 8px; }
+.message-center-card { display: flex; flex-direction: column; overflow: hidden; }
+.message-center-header { flex: 0 0 auto; background: #ffffff; border-bottom: 1px solid #eef2f7; padding-bottom: 12px; position: relative; z-index: 2; }
+.message-center-scroll { min-height: 0; overflow-y: auto; padding: 12px 3px 2px 0; scrollbar-gutter: stable; }
 .danger-line-icon { color: #dc2626; position: relative; z-index: 1; }
 .delete-bar {
     display: flex;
@@ -864,6 +881,7 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
     padding: 18px;
 }
 .modal-card { background: white; border-radius: 22px; width: min(760px, calc(100% - 24px)); max-height: 92vh; overflow: auto; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.25); }
+.modal-card.message-center-card { overflow: hidden; }
 @media (max-width: 640px) {
     .grid-apps { grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 12px; }
     .category-grid { grid-template-columns: repeat(auto-fit, 122px); }
@@ -1071,6 +1089,12 @@ body { background: #d1d5db; font-family: 'Segoe UI', -apple-system, BlinkMacSyst
         max-height: none;
         border-radius: 20px;
         padding: 16px !important;
+    }
+    .message-center-card {
+        max-height: calc(100vh - 20px);
+    }
+    .message-center-scroll {
+        padding-right: 0;
     }
     .modal-card h2 {
         font-size: 18px;

@@ -102,58 +102,68 @@
     };
 
     const listMessages = async (profiles = []) => {
-        const [messageRows, receiptRows] = await Promise.all([
+        const [messageRows, receiptRows, recipientRows] = await Promise.all([
             client.from('sim_messages').select('*').order('created_at', { ascending: false }),
-            client.from('sim_message_receipts').select('*').order('confirmed_at', { ascending: false })
+            client.from('sim_message_receipts').select('*').order('confirmed_at', { ascending: false }),
+            client.from('sim_message_recipients').select('message_id,user_id')
         ]);
         const messages = requireData(messageRows) || [];
         const receipts = requireData(receiptRows) || [];
+        const recipients = requireData(recipientRows) || [];
         const profileMap = new Map(profiles.map(profile => [profile.id, profile]));
-        return messages.map(message => ({
-            id: message.id,
-            senderId: message.sender_id,
-            from: profileMap.get(message.sender_id)?.displayName || 'Adm',
-            to: message.target_type === 'all' ? 'todos' : (message.target_type === 'group' ? `group:${message.target_group}` : message.target_user_id),
-            targetType: message.target_type,
-            targetUserId: message.target_user_id,
-            targetGroup: message.target_group,
-            title: message.title,
-            text: message.body,
-            date: new Date(message.created_at).toLocaleString('pt-BR'),
-            createdAt: message.created_at,
-            readBy: receipts.filter(receipt => receipt.message_id === message.id).map(receipt => ({
-                username: receipt.user_id,
-                displayName: profileMap.get(receipt.user_id)?.displayName || 'Usuário',
-                date: new Date(receipt.confirmed_at).toLocaleString('pt-BR')
-            }))
-        }));
-    };
-
-    const sendMessage = async ({ target, title, text }) => {
-        const row = { title: title.trim(), body: text.trim(), target_type: 'all', target_user_id: null, target_group: null };
-        if (String(target).startsWith('group:')) {
-            row.target_type = 'group';
-            row.target_group = String(target).slice(6);
-        } else if (target !== 'todos') {
-            row.target_type = 'user';
-            row.target_user_id = target;
-        }
-        requireData(await client.from('sim_messages').insert(row));
-    };
-
-    const sendTeamsMessage = async ({ target, title, text }) => {
-        const { data, error } = await client.functions.invoke('sim-teams-message', {
-            body: { target, title: title.trim(), text: text.trim() }
+        return messages.map(message => {
+            const recipientIds = recipients.filter(recipient => recipient.message_id === message.id).map(recipient => recipient.user_id);
+            return {
+                id: message.id,
+                senderId: message.sender_id,
+                from: profileMap.get(message.sender_id)?.displayName || 'Adm',
+                to: message.target_type === 'users' ? recipientIds : (message.target_type === 'all' ? 'todos' : (message.target_type === 'group' ? `group:${message.target_group}` : message.target_user_id)),
+                recipientIds,
+                targetType: message.target_type,
+                targetUserId: message.target_user_id,
+                targetGroup: message.target_group,
+                title: message.title,
+                text: message.body,
+                date: new Date(message.created_at).toLocaleString('pt-BR'),
+                createdAt: message.created_at,
+                readBy: receipts.filter(receipt => receipt.message_id === message.id).map(receipt => ({
+                    username: receipt.user_id,
+                    displayName: profileMap.get(receipt.user_id)?.displayName || 'Usuário',
+                    date: new Date(receipt.confirmed_at).toLocaleString('pt-BR')
+                }))
+            };
         });
-        if (error) {
-            let message = 'Não foi possível enviar a mensagem ao Teams.';
-            try {
-                const body = await error.context?.json();
-                if (body?.error) message = body.error;
-            } catch (_) { /* response body may already be consumed */ }
-            throw new Error(message);
+    };
+
+    const sendMessage = async ({ recipientIds, title, text }) => {
+        const recipients = Array.from(new Set((recipientIds || []).filter(Boolean)));
+        if (!recipients.length) throw new Error('Selecione pelo menos um destinatário.');
+        const message = requireData(await client.from('sim_messages').insert({
+            title: title.trim(), body: text.trim(), target_type: 'users', target_user_id: null, target_group: null
+        }).select('id').single());
+        const recipientResult = await client.from('sim_message_recipients').insert(recipients.map(userId => ({ message_id: message.id, user_id: userId })));
+        if (recipientResult.error) {
+            await client.from('sim_messages').delete().eq('id', message.id);
+            throw recipientResult.error;
         }
-        return data;
+    };
+
+    const sendTeamsMessage = async ({ teamsTargets, title, text }) => {
+        const targets = Array.from(new Set((teamsTargets || []).filter(Boolean)));
+        for (const target of targets) {
+            const { error } = await client.functions.invoke('sim-teams-message', {
+                body: { target, title: title.trim(), text: text.trim() }
+            });
+            if (error) {
+                let message = 'Não foi possível enviar a mensagem ao Teams.';
+                try {
+                    const body = await error.context?.json();
+                    if (body?.error) message = body.error;
+                } catch (_) { /* response body may already be consumed */ }
+                throw new Error(message);
+            }
+        }
+        return { sent: true, deliveries: targets.length };
     };
 
     const confirmMessage = async (messageId) => {
@@ -168,8 +178,9 @@
     const listDocuments = async () => requireData(await client.from('sim_documents').select('*').eq('active', true).order('created_at', { ascending: false })) || [];
 
     const detectMimeType = (file) => {
-        if (file.type) return file.type;
         const extension = file.name.split('.').pop()?.toLowerCase();
+        if (extension === 'rar') return 'application/vnd.rar';
+        if (file.type) return file.type;
         return ({
             pdf: 'application/pdf', csv: 'text/csv', xls: 'application/vnd.ms-excel',
             xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
@@ -180,7 +191,7 @@
         if (!file || file.size <= 0) throw new Error('Selecione um arquivo válido.');
         if (file.size > 20 * 1024 * 1024) throw new Error('O arquivo deve ter no máximo 20 MB.');
         const extension = file.name.split('.').pop()?.toLowerCase();
-        if (!['pdf', 'csv', 'xls', 'xlsx'].includes(extension)) throw new Error('Envie PDF, CSV, XLS ou XLSX.');
+        if (!['pdf', 'csv', 'xls', 'xlsx', 'rar'].includes(extension)) throw new Error('Envie PDF, CSV, XLS, XLSX ou RAR.');
         const safeName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
         const storagePath = `escalas/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeName}`;
         const mimeType = detectMimeType(file);
@@ -295,6 +306,7 @@
     const subscribe = (refresh) => {
         const channel = client.channel('sim-workspace')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_messages' }, refresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_message_recipients' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_message_receipts' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_documents' }, refresh)
             .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_profiles' }, refresh)

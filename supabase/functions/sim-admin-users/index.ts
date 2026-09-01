@@ -17,6 +17,19 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 
+const findAuthUserByEmail = async (adminClient: ReturnType<typeof createClient>, email: string) => {
+  const perPage = 1000;
+  for (let page = 1; page <= 100; page += 1) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const users = data.users ?? [];
+    const match = users.find((user) => String(user.email ?? "").trim().toLowerCase() === email);
+    if (match) return match;
+    if (users.length < perPage) return null;
+  }
+  throw new Error("Limite de paginação atingido ao localizar usuário existente.");
+};
+
 Deno.serve(async (request: Request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (request.method !== "POST") return json({ error: "Método não permitido." }, 405);
@@ -143,6 +156,47 @@ Deno.serve(async (request: Request) => {
     if (!displayName || displayName.length > 120) return json({ error: "Nome inválido." }, 400);
     if (!['admin', 'user'].includes(role)) return json({ error: "Perfil de acesso inválido." }, 400);
     if (!groupId || groupId.length > 80) return json({ error: "Grupo inválido." }, 400);
+
+    const existingAuthUser = await findAuthUserByEmail(adminClient, email);
+    if (existingAuthUser) {
+      const { data: existingProfile, error: existingProfileError } = await adminClient
+        .from("sim_profiles")
+        .select("user_id, active")
+        .eq("user_id", existingAuthUser.id)
+        .maybeSingle();
+      if (existingProfileError) throw existingProfileError;
+      if (!existingProfile) {
+        return json({ error: "Este e-mail já possui uma conta de autenticação sem perfil no SIM. Procure o suporte." }, 409);
+      }
+      if (existingProfile.active) {
+        return json({ error: "Já existe um usuário ativo com este e-mail." }, 409);
+      }
+
+      const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(existingAuthUser.id, {
+        password,
+        email_confirm: true,
+        user_metadata: { display_name: displayName },
+      });
+      if (authUpdateError) return json({ error: "Não foi possível redefinir a conta existente." }, 400);
+
+      const { data: reactivated, error: reactivateError } = await adminClient
+        .from("sim_profiles")
+        .update({
+          display_name: displayName,
+          role,
+          group_id: groupId,
+          active: true,
+          must_change_password: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", existingAuthUser.id)
+        .eq("active", false)
+        .select("user_id, display_name, role, group_id, active, must_change_password")
+        .maybeSingle();
+      if (reactivateError) throw reactivateError;
+      if (!reactivated) return json({ error: "O usuário mudou enquanto era reativado. Atualize a página e tente novamente." }, 409);
+      return json({ user: reactivated, reactivated: true });
+    }
 
     const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email,

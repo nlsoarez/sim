@@ -294,7 +294,7 @@ const App = () => {
     const lineIcon = (paths) => React.createElement('svg', { className: 'top-line-icon', width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' }, paths);
     return React.createElement('div', { className: 'min-h-screen', style: { background: '#d1d5db' } }, [
         user.role === 'admin' && React.createElement('input', { key: 'contact-upload', ref: contactUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.txt', onChange: handleContactUpload }),
-        user.role === 'admin' && React.createElement('input', { key: 'schedule-upload', ref: scheduleUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.pdf', onChange: handleScheduleUpload }),
+        user.role === 'admin' && React.createElement('input', { key: 'schedule-upload', ref: scheduleUploadRef, type: 'file', className: 'hidden-file-input', accept: '.xlsx,.xls,.csv,.pdf,.rar', onChange: handleScheduleUpload }),
         React.createElement('header', { key: 'header', className: 'sticky top-0 z-10 py-1' }, React.createElement('div', { className: 'top-shell' }, React.createElement('div', { className: 'flex flex-col md:flex-row md:items-center md:justify-between gap-4' }, [
             React.createElement('button', { key: 'brand', type: 'button', onClick: goHome, className: 'brand-home-btn flex items-center gap-3' }, [
                 React.createElement('div', { key: 'logo-wrap', className: 'w-12 h-12 flex items-center justify-center' }, React.createElement('img', { className: 'portal-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),

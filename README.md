@@ -10,7 +10,7 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 - Gestão de usuários pelo próprio portal, protegida no backend.
 - Depósito privado para planilhas de escalonamento e PDFs, com limite de 20 MB.
 - Diretório de contatos por cluster persistido e compartilhado entre todos os usuários ativos.
-- Central de mensagens persistente, com envio para todos, grupo ou usuário.
+- Central de mensagens persistente, com seleção múltipla de destinatários e atalho para selecionar o grupo inteiro.
 - Envio opcional da mesma mensagem ao Microsoft Teams, sem interromper ou substituir o registro interno.
 - Confirmação de leitura e relatório imprimível/PDF para perfis Adm.
 - Atualização em tempo real de mensagens, confirmações e documentos.
@@ -25,7 +25,7 @@ Depois de entrar, um perfil Adm usa o ícone de engrenagem **Gerenciar usuários
 
 Um perfil Adm abre **Documentos** e usa o ícone de upload. O arquivo é armazenado no bucket privado `sim-documents` e aparece na mesma página para todos os membros ativos.
 
-Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
+Formatos aceitos: `.xlsx`, `.xls`, `.csv`, `.pdf` e `.rar`.
 
 ## Backend e segurança
 

@@ -397,44 +397,46 @@ const UserAdminPage = ({ currentUser, profiles, onCreate, onDelete, onBack }) =>
         } finally { setDeletingId(''); }
     };
     return React.createElement('div', { className: 'tray-inner user-admin-page fade-in' }, [
-        React.createElement('div', { key: 'nav', className: 'flex items-center gap-3 mb-5' }, [
+        React.createElement('div', { key: 'nav', className: 'user-admin-header flex items-center gap-3' }, [
             React.createElement('button', { key: 'back', type: 'button', onClick: onBack, className: 'back-emoji-btn', title: 'Retornar', 'aria-label': 'Retornar' }, React.createElement('img', { className: 'back-image-icon', src: 'assets/icons/icons8-undo-100.png', alt: '', 'aria-hidden': 'true' })),
             React.createElement('div', { key: 'copy' }, [
                 React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-gray-700' }, 'Usuários do SIM'),
                 React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Crie contas individuais; senhas nunca são armazenadas no código.')
             ])
         ]),
-        React.createElement('form', { key: 'form', onSubmit: submit, className: 'user-create-form' }, [
-            React.createElement('input', { key: 'name', required: true, maxLength: 120, className: 'search-input', placeholder: 'Nome completo', value: form.displayName, onChange: update('displayName') }),
-            React.createElement('input', { key: 'email', required: true, type: 'email', autoComplete: 'off', className: 'search-input', placeholder: 'E-mail corporativo', value: form.email, onChange: update('email') }),
-            React.createElement('input', { key: 'password', required: true, minLength: 8, type: 'password', autoComplete: 'new-password', className: 'search-input user-password-input', placeholder: 'claro123', value: form.password, onChange: update('password') }),
-            React.createElement('select', { key: 'role', className: 'search-input', value: form.role, onChange: update('role') }, [
-                React.createElement('option', { key: 'user', value: 'user' }, 'User'),
-                React.createElement('option', { key: 'admin', value: 'admin' }, 'Adm')
+        React.createElement('div', { key: 'scroll', className: 'user-admin-scroll' }, [
+            React.createElement('form', { key: 'form', onSubmit: submit, className: 'user-create-form' }, [
+                React.createElement('input', { key: 'name', required: true, maxLength: 120, className: 'search-input', placeholder: 'Nome completo', value: form.displayName, onChange: update('displayName') }),
+                React.createElement('input', { key: 'email', required: true, type: 'email', autoComplete: 'off', className: 'search-input', placeholder: 'E-mail corporativo', value: form.email, onChange: update('email') }),
+                React.createElement('input', { key: 'password', required: true, minLength: 8, type: 'password', autoComplete: 'new-password', className: 'search-input user-password-input', placeholder: 'claro123', value: form.password, onChange: update('password') }),
+                React.createElement('select', { key: 'role', className: 'search-input', value: form.role, onChange: update('role') }, [
+                    React.createElement('option', { key: 'user', value: 'user' }, 'User'),
+                    React.createElement('option', { key: 'admin', value: 'admin' }, 'Adm')
+                ]),
+                React.createElement('input', { key: 'group', required: true, maxLength: 80, className: 'search-input', placeholder: 'Grupo', value: form.groupId, onChange: update('groupId') }),
+                React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn create-user-icon-btn', title: 'Criar usuário', 'aria-label': 'Criar usuário' }, loading ? '…' : React.createElement(ActionIcon, { name: 'Plus', size: 20 }))
             ]),
-            React.createElement('input', { key: 'group', required: true, maxLength: 80, className: 'search-input', placeholder: 'Grupo', value: form.groupId, onChange: update('groupId') }),
-            React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'primary-action-btn create-user-icon-btn', title: 'Criar usuário', 'aria-label': 'Criar usuário' }, loading ? '…' : React.createElement(ActionIcon, { name: 'Plus', size: 20 }))
-        ]),
-        status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
-        React.createElement('div', { key: 'members', className: 'member-list' }, orderedProfiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
-            React.createElement('span', { key: 'name' }, profile.role === 'admin' ? profile.displayName.toLocaleUpperCase('pt-BR') : profile.displayName),
-            React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Adm' : 'User'),
-            React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
-            React.createElement('button', {
-                key: 'delete', type: 'button',
-                disabled: profile.id === currentUser.id || !!deletingId,
-                onClick: () => remove(profile),
-                className: 'danger-icon-btn',
-                title: profile.id === currentUser.id ? 'Você não pode excluir a própria conta' : 'Excluir usuário',
-                'aria-label': profile.id === currentUser.id ? 'Não é possível excluir sua própria conta' : `Excluir ${profile.displayName}`
-            }, deletingId === profile.id ? '…' : React.createElement(ActionIcon, { name: 'Trash', size: 17 }))
-        ])))
+            status && React.createElement('p', { key: 'status', className: status.type === 'error' ? 'system-alert error' : 'system-alert success' }, status.text),
+            React.createElement('div', { key: 'members', className: 'member-list' }, orderedProfiles.map(profile => React.createElement('div', { key: profile.id, className: 'member-row' }, [
+                React.createElement('span', { key: 'name' }, profile.role === 'admin' ? profile.displayName.toLocaleUpperCase('pt-BR') : profile.displayName),
+                React.createElement('span', { key: 'role', className: `role-pill ${profile.role}` }, profile.role === 'admin' ? 'Adm' : 'User'),
+                React.createElement('span', { key: 'group', className: 'member-group' }, formatGroupName(profile.group)),
+                React.createElement('button', {
+                    key: 'delete', type: 'button',
+                    disabled: profile.id === currentUser.id || !!deletingId,
+                    onClick: () => remove(profile),
+                    className: 'danger-icon-btn',
+                    title: profile.id === currentUser.id ? 'Você não pode excluir a própria conta' : 'Excluir usuário',
+                    'aria-label': profile.id === currentUser.id ? 'Não é possível excluir sua própria conta' : `Excluir ${profile.displayName}`
+                }, deletingId === profile.id ? '…' : React.createElement(ActionIcon, { name: 'Trash', size: 17 }))
+            ])))
+        ])
     ]);
 };
 
 const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, onClose }) => {
     const teamsLoginIds = new Set(['N0238475', 'N5923221', 'N5772086', 'N0239871', 'F104752', 'N5972428', 'N4014011', 'F106664']);
-    const [target, setTarget] = React.useState('todos');
+    const [selectedRecipientIds, setSelectedRecipientIds] = React.useState([]);
     const [title, setTitle] = React.useState('');
     const [text, setText] = React.useState('');
     const [sendToTeams, setSendToTeams] = React.useState(false);
@@ -442,18 +444,35 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
     const [loadingId, setLoadingId] = React.useState('');
     const [selected, setSelected] = React.useState([]);
     const [deleteMode, setDeleteMode] = React.useState(false);
-    const recipientProfiles = profiles.filter(profile => profile.role !== 'admin');
+    const recipientProfiles = profiles.filter(profile => profile.role !== 'admin').sort((a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR'));
     const profileMap = new Map(recipientProfiles.map(profile => [profile.id, profile]));
     const groups = Array.from(new Set(recipientProfiles.map(profile => profile.group).filter(Boolean)));
-    const isTeamsAvailable = (value) => value === 'todos' || String(value).startsWith('group:') || teamsLoginIds.has(profileMap.get(value)?.loginId);
-    const teamsAvailable = isTeamsAvailable(target);
-    const targetLabel = (value) => value === 'todos' ? 'Todos' : (String(value).startsWith('group:') ? `Grupo ${String(value).slice(6)}` : (profileMap.get(value)?.displayName || 'Usuário'));
+    const selectedProfiles = recipientProfiles.filter(profile => selectedRecipientIds.includes(profile.id));
+    const groupMembers = (group) => recipientProfiles.filter(profile => normalizeText(profile.group) === normalizeText(group));
+    const isGroupSelected = (group) => {
+        const members = groupMembers(group);
+        return members.length > 0 && members.every(profile => selectedRecipientIds.includes(profile.id));
+    };
+    const toggleGroup = (group) => {
+        const memberIds = groupMembers(group).map(profile => profile.id);
+        setSelectedRecipientIds(previous => memberIds.every(id => previous.includes(id)) ? previous.filter(id => !memberIds.includes(id)) : Array.from(new Set([...previous, ...memberIds])));
+    };
+    const toggleRecipient = (profileId) => setSelectedRecipientIds(previous => previous.includes(profileId) ? previous.filter(id => id !== profileId) : [...previous, profileId]);
+    const fullySelectedGroup = groups.find(group => isGroupSelected(group) && groupMembers(group).length === selectedRecipientIds.length);
+    const teamsAvailable = selectedProfiles.length > 0 && (Boolean(fullySelectedGroup) || selectedProfiles.every(profile => teamsLoginIds.has(profile.loginId)));
+    const teamsTargets = fullySelectedGroup ? [`group:${fullySelectedGroup}`] : selectedRecipientIds;
+    const formatGroupName = (group) => normalizeText(group) === 'residencial' ? 'Residencial' : String(group || '');
+    const targetLabel = (value) => Array.isArray(value)
+        ? (value.map(id => profileMap.get(id)?.displayName).filter(Boolean).join(', ') || 'Destinatários selecionados')
+        : (value === 'todos' ? 'Todos' : (String(value).startsWith('group:') ? `Grupo ${formatGroupName(String(value).slice(6))}` : (profileMap.get(value)?.displayName || 'Usuário')));
     const send = async () => {
         if (!title.trim()) return setStatus({ type: 'error', text: 'Informe o título da mensagem.' });
+        if (!selectedRecipientIds.length) return setStatus({ type: 'error', text: 'Selecione pelo menos um destinatário.' });
         setLoadingId('send'); setStatus(null);
         try {
-            const result = await onSend({ target, title, text, sendToTeams });
+            const result = await onSend({ recipientIds: selectedRecipientIds, teamsTargets, title, text, sendToTeams });
             setTitle(''); setText('');
+            setSelectedRecipientIds([]);
             setSendToTeams(false);
             setStatus({ type: 'success', text: result?.teamsSent ? 'Mensagem enviada no SIM e no Teams.' : 'Mensagem enviada e armazenada no SIM.' });
         } catch (sendError) { setStatus({ type: sendError.internalSaved ? 'warning' : 'error', text: sendError.message || 'Falha ao enviar.' }); }
@@ -480,8 +499,8 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
         report.document.close(); report.focus(); report.print();
     };
     return React.createElement('div', { className: 'modal-overlay', onClick: event => event.target === event.currentTarget && onClose() },
-        React.createElement('div', { className: 'modal-card p-5' }, [
-            React.createElement('div', { key: 'header', className: 'flex items-center justify-between mb-4' }, [
+        React.createElement('div', { className: 'modal-card message-center-card p-5' }, [
+            React.createElement('div', { key: 'header', className: 'message-center-header flex items-center justify-between' }, [
                 React.createElement('h2', { key: 'title', className: 'text-xl font-bold text-red-700' }, 'Central de Mensagens'),
                 React.createElement('div', { key: 'actions', className: 'modal-header-actions' }, [
                     user.role === 'admin' && React.createElement('button', { key: 'pdf', type: 'button', onClick: exportPdf, className: 'secondary-action-btn' }, 'PDF'),
@@ -489,37 +508,46 @@ const MessageCenter = ({ user, profiles, messages, onSend, onConfirm, onDelete, 
                     React.createElement('button', { key: 'close', type: 'button', onClick: onClose, className: 'header-btn', 'aria-label': 'Fechar' }, '×')
                 ])
             ]),
-            status && React.createElement('p', { key: 'status', className: `system-alert ${status.type}` }, status.text),
-            user.role === 'admin' && React.createElement('section', { key: 'composer', className: 'message-composer' }, [
-                React.createElement('h3', { key: 'heading' }, 'Enviar mensagem'),
-                React.createElement('select', { key: 'target', className: 'search-input', value: target, onChange: event => { const nextTarget = event.target.value; setTarget(nextTarget); if (!isTeamsAvailable(nextTarget)) setSendToTeams(false); } }, [
-                    React.createElement('option', { key: 'all', value: 'todos' }, 'Todos os usuários'),
-                    ...groups.map(group => React.createElement('option', { key: `group-${group}`, value: `group:${group}` }, `Grupo ${group}`)),
-                    ...recipientProfiles.map(profile => React.createElement('option', { key: profile.id, value: profile.id }, profile.displayName))
+            React.createElement('div', { key: 'scroll', className: 'message-center-scroll' }, [
+                status && React.createElement('p', { key: 'status', className: `system-alert ${status.type}` }, status.text),
+                user.role === 'admin' && React.createElement('section', { key: 'composer', className: 'message-composer' }, [
+                    React.createElement('h3', { key: 'heading' }, 'Enviar mensagem'),
+                    React.createElement('div', { key: 'recipients', className: 'message-recipient-panel' }, [
+                        React.createElement('p', { key: 'label', className: 'message-recipient-title' }, `Destinatários • ${selectedRecipientIds.length} selecionado(s)`),
+                        React.createElement('div', { key: 'groups', className: 'message-recipient-groups' }, groups.map(group => React.createElement('label', { key: group, className: 'message-recipient-option group-option' }, [
+                            React.createElement('input', { key: 'checkbox', type: 'checkbox', checked: isGroupSelected(group), onChange: () => { toggleGroup(group); setSendToTeams(false); }, 'aria-label': `Grupo ${formatGroupName(group)}` }),
+                            React.createElement('span', { key: 'name', className: 'recipient-name' }, `Grupo ${formatGroupName(group)}`),
+                            React.createElement('small', { key: 'count' }, `${groupMembers(group).length} pessoas`)
+                        ]))),
+                        React.createElement('div', { key: 'people', className: 'message-recipient-list' }, recipientProfiles.map(profile => React.createElement('label', { key: profile.id, className: 'message-recipient-option' }, [
+                            React.createElement('input', { key: 'checkbox', type: 'checkbox', checked: selectedRecipientIds.includes(profile.id), onChange: () => { toggleRecipient(profile.id); setSendToTeams(false); }, 'aria-label': profile.displayName }),
+                            React.createElement('span', { key: 'name', className: 'recipient-name' }, profile.displayName)
+                        ])))
+                    ]),
+                    React.createElement('input', { key: 'title', maxLength: 160, className: 'search-input', placeholder: 'Título', value: title, onChange: event => setTitle(event.target.value) }),
+                    React.createElement('textarea', { key: 'body', maxLength: 5000, rows: 3, className: 'search-input', placeholder: 'Mensagem', value: text, onChange: event => setText(event.target.value) }),
+                    React.createElement('label', { key: 'teams', className: `teams-send-option ${teamsAvailable ? '' : 'disabled'}` }, [
+                        React.createElement('input', { key: 'checkbox', type: 'checkbox', checked: sendToTeams, disabled: !teamsAvailable, onChange: event => setSendToTeams(event.target.checked) }),
+                        React.createElement('span', { key: 'label' }, teamsAvailable ? 'Enviar também no Microsoft Teams' : 'Teams indisponível para parte dos destinatários selecionados')
+                    ]),
+                    React.createElement('button', { key: 'send', type: 'button', disabled: loadingId === 'send' || !selectedRecipientIds.length, onClick: send, className: 'primary-action-btn' }, loadingId === 'send' ? 'Enviando...' : 'Enviar mensagem')
                 ]),
-                React.createElement('input', { key: 'title', maxLength: 160, className: 'search-input', placeholder: 'Título', value: title, onChange: event => setTitle(event.target.value) }),
-                React.createElement('textarea', { key: 'body', maxLength: 5000, rows: 3, className: 'search-input', placeholder: 'Mensagem', value: text, onChange: event => setText(event.target.value) }),
-                React.createElement('label', { key: 'teams', className: `teams-send-option ${teamsAvailable ? '' : 'disabled'}` }, [
-                    React.createElement('input', { key: 'checkbox', type: 'checkbox', checked: sendToTeams, disabled: !teamsAvailable, onChange: event => setSendToTeams(event.target.checked) }),
-                    React.createElement('span', { key: 'label' }, teamsAvailable ? 'Enviar também no Microsoft Teams' : 'Teams indisponível para este usuário (webhook não configurado)')
+                user.role === 'admin' && deleteMode && React.createElement('div', { key: 'delete-bar', className: 'delete-bar' }, [
+                    React.createElement('span', { key: 'count' }, `${selected.length} selecionada(s)`),
+                    React.createElement('button', { key: 'confirm', type: 'button', disabled: !selected.length || loadingId === 'delete', onClick: removeSelected, className: 'delete-confirm-btn' }, 'Apagar selecionadas')
                 ]),
-                React.createElement('button', { key: 'send', type: 'button', disabled: loadingId === 'send', onClick: send, className: 'primary-action-btn' }, loadingId === 'send' ? 'Enviando...' : 'Enviar mensagem')
-            ]),
-            user.role === 'admin' && deleteMode && React.createElement('div', { key: 'delete-bar', className: 'delete-bar' }, [
-                React.createElement('span', { key: 'count' }, `${selected.length} selecionada(s)`),
-                React.createElement('button', { key: 'confirm', type: 'button', disabled: !selected.length || loadingId === 'delete', onClick: removeSelected, className: 'delete-confirm-btn' }, 'Apagar selecionadas')
-            ]),
-            React.createElement('div', { key: 'list', className: 'message-list space-y-3 overflow-y-auto' }, messages.length === 0 ? React.createElement('p', { className: 'text-center text-gray-500 py-8' }, 'Nenhuma mensagem disponível.') : messages.map(message => {
-                const ownReceipt = message.readBy.find(receipt => receipt.username === user.id);
-                return React.createElement('article', { key: message.id, className: 'message-detail-body border rounded-2xl p-4' }, [
-                    user.role === 'admin' && deleteMode && React.createElement('input', { key: 'check', type: 'checkbox', checked: selected.includes(message.id), onChange: () => setSelected(previous => previous.includes(message.id) ? previous.filter(id => id !== message.id) : [...previous, message.id]) }),
-                    React.createElement('p', { key: 'meta', className: 'text-xs text-gray-500' }, `${message.date} • De: ${message.from} • Para: ${targetLabel(message.to)}`),
-                    React.createElement('h3', { key: 'title', className: 'font-bold mt-1' }, message.title),
-                    message.text && React.createElement('p', { key: 'body', className: 'text-sm mt-1' }, message.text),
-                    user.role === 'admin' ? React.createElement('div', { key: 'receipts', className: 'message-receipts' }, message.readBy.length ? message.readBy.map(receipt => React.createElement('p', { key: receipt.username }, `Confirmada por ${receipt.displayName} em ${receipt.date}`)) : React.createElement('p', null, 'Nenhuma confirmação ainda.')) :
-                        (ownReceipt ? React.createElement('p', { key: 'done', className: 'read-confirmed' }, `Recebida e lida em ${ownReceipt.date}`) : React.createElement('button', { key: 'confirm', type: 'button', disabled: loadingId === message.id, onClick: () => confirm(message), className: 'confirm-read-btn mt-3' }, loadingId === message.id ? 'Confirmando...' : 'Confirmar leitura'))
-                ]);
-            }))
+                React.createElement('div', { key: 'list', className: 'message-list space-y-3' }, messages.length === 0 ? React.createElement('p', { className: 'text-center text-gray-500 py-8' }, 'Nenhuma mensagem disponível.') : messages.map(message => {
+                    const ownReceipt = message.readBy.find(receipt => receipt.username === user.id);
+                    return React.createElement('article', { key: message.id, className: 'message-detail-body border rounded-2xl p-4' }, [
+                        user.role === 'admin' && deleteMode && React.createElement('input', { key: 'check', type: 'checkbox', checked: selected.includes(message.id), onChange: () => setSelected(previous => previous.includes(message.id) ? previous.filter(id => id !== message.id) : [...previous, message.id]) }),
+                        React.createElement('p', { key: 'meta', className: 'text-xs text-gray-500' }, `${message.date} • De: ${message.from} • Para: ${targetLabel(message.to)}`),
+                        React.createElement('h3', { key: 'title', className: 'font-bold mt-1' }, message.title),
+                        message.text && React.createElement('p', { key: 'body', className: 'text-sm mt-1' }, message.text),
+                        user.role === 'admin' ? React.createElement('div', { key: 'receipts', className: 'message-receipts' }, message.readBy.length ? message.readBy.map(receipt => React.createElement('p', { key: receipt.username }, `Confirmada por ${receipt.displayName} em ${receipt.date}`)) : React.createElement('p', null, 'Nenhuma confirmação ainda.')) :
+                            (ownReceipt ? React.createElement('p', { key: 'done', className: 'read-confirmed' }, `Recebida e lida em ${ownReceipt.date}`) : React.createElement('button', { key: 'confirm', type: 'button', disabled: loadingId === message.id, onClick: () => confirm(message), className: 'confirm-read-btn mt-3' }, loadingId === message.id ? 'Confirmando...' : 'Confirmar leitura'))
+                    ]);
+                }))
+            ])
         ])
     );
 };

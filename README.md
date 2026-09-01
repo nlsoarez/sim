@@ -4,7 +4,7 @@ Portal estático hospedável no GitHub Pages, com autenticação, dados comparti
 
 ## O que está implementado
 
-- Login real por e-mail e senha (Supabase Auth).
+- Login real por matrícula ou e-mail e senha (Supabase Auth).
 - Perfis internos `admin` e `user`, protegidos por Row Level Security (RLS), exibidos como **Adm** e **User**.
 - Cadastro de usuários exclusivamente por um perfil Adm autenticado.
 - Gestão de usuários pelo próprio portal, protegida no backend.
@@ -32,6 +32,7 @@ Formatos aceitos: `.xlsx`, `.xls`, `.csv` e `.pdf`.
 - Projeto Supabase: `divisao-equipe-madrugada` (`aaxdcpftynjphzitigrv`).
 - Migrações versionadas em `supabase/migrations/`, incluindo o backend multiusuário, cadastro com aprovação e índices relacionados.
 - Função de criação de usuários: `supabase/functions/sim-admin-users/index.ts`.
+- Função pública de autenticação por matrícula ou e-mail: `supabase/functions/sim-login/index.ts`; ela apenas resolve a matrícula e delega a validação da senha ao Supabase Auth.
 - Função protegida para ações administrativas em documentos: `supabase/functions/sim-admin-actions/index.ts`.
 - Função protegida de envio ao Teams: `supabase/functions/sim-teams-message/index.ts`. Os webhooks ficam em segredo de ambiente e nunca são publicados no GitHub Pages.
 - A chave presente no JavaScript é uma chave **publicável**, própria para clientes web. Nenhuma chave secreta ou `service_role` é enviada ao navegador.

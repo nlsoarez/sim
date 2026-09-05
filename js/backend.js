@@ -67,7 +67,7 @@
 
     const changeInitialPassword = async (newPassword) => {
         const password = String(newPassword || '');
-        if (password.length < 12) throw new Error('A nova senha deve ter pelo menos 12 caracteres.');
+        if (password.length < 6) throw new Error('A nova senha deve ter pelo menos 6 caracteres.');
 
         const { error } = await client.auth.updateUser({ password });
         if (error) throw new Error(error.message || 'Não foi possível alterar a senha.');

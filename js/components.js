@@ -48,8 +48,8 @@ const InitialPasswordChangePage = ({ user, onChangePassword, onLogout }) => {
 
     const handleSubmit = async (event) => {
         event.preventDefault();
-        if (password.length < 12) {
-            setError('A nova senha deve ter pelo menos 12 caracteres.');
+        if (password.length < 6) {
+            setError('A nova senha deve ter pelo menos 6 caracteres.');
             return;
         }
         if (password !== confirmation) {
@@ -72,8 +72,8 @@ const InitialPasswordChangePage = ({ user, onChangePassword, onLogout }) => {
             React.createElement('div', { key: 'logo', className: 'mx-auto w-16 h-16 flex items-center justify-center mb-4' }, React.createElement('img', { className: 'login-logo', src: 'assets/icons/icons8-owl-100.png', alt: 'SIM' })),
             React.createElement('h1', { key: 'title', className: 'text-xl font-bold text-center text-red-700 mb-2' }, 'Altere sua senha'),
             React.createElement('p', { key: 'welcome', className: 'password-change-copy' }, `Olá, ${user.displayName}. Por segurança, defina uma senha pessoal antes de acessar o SIM.`),
-            React.createElement('input', { key: 'password', type: 'password', minLength: 12, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Nova senha (mínimo 12 caracteres)', value: password, onChange: event => setPassword(event.target.value) }),
-            React.createElement('input', { key: 'confirmation', type: 'password', minLength: 12, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Confirme a nova senha', value: confirmation, onChange: event => setConfirmation(event.target.value) }),
+            React.createElement('input', { key: 'password', type: 'password', minLength: 6, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Nova senha (mínimo 6 caracteres)', value: password, onChange: event => setPassword(event.target.value) }),
+            React.createElement('input', { key: 'confirmation', type: 'password', minLength: 6, required: true, autoComplete: 'new-password', className: 'search-input mb-3', placeholder: 'Confirme a nova senha', value: confirmation, onChange: event => setConfirmation(event.target.value) }),
             error && React.createElement('p', { key: 'error', className: 'text-sm text-red-600 mb-3 text-center' }, error),
             React.createElement('button', { key: 'submit', type: 'submit', disabled: loading, className: 'w-full bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white font-semibold rounded-2xl py-3 transition-all' }, loading ? 'Alterando...' : 'Alterar senha e entrar'),
             React.createElement('button', { key: 'logout', type: 'button', disabled: loading, onClick: onLogout, className: 'password-change-logout' }, 'Sair')

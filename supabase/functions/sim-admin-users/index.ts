@@ -150,8 +150,8 @@ Deno.serve(async (request: Request) => {
     const groupId = String(payload.groupId ?? "residencial").trim().toLowerCase();
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "E-mail inválido." }, 400);
-    if (password !== "claro123" && password.length < 12) {
-      return json({ error: "Use a senha padrão claro123 ou uma senha inicial com pelo menos 12 caracteres." }, 400);
+    if (password !== "claro123" && password.length < 6) {
+      return json({ error: "Use a senha padrão claro123 ou uma senha inicial com pelo menos 6 caracteres." }, 400);
     }
     if (!displayName || displayName.length > 120) return json({ error: "Nome inválido." }, 400);
     if (!['admin', 'user'].includes(role)) return json({ error: "Perfil de acesso inválido." }, 400);

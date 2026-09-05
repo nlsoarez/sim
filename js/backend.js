@@ -4,8 +4,8 @@
         return;
     }
 
-    const SUPABASE_URL = 'https://aaxdcpftynjphzitigrv.supabase.co';
-    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_qJaICKj1Ro-tO3DPqtr9TA_9cFFccCS';
+    const SUPABASE_URL = 'https://tapqwjlsacleadqxelep.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable__FxWZaIEkFAZiCkgf4zAUg_aqQwa-KZ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
         auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
     });

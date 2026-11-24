@@ -180,6 +180,8 @@
     const detectMimeType = (file) => {
         const extension = file.name.split('.').pop()?.toLowerCase();
         if (extension === 'rar') return 'application/vnd.rar';
+        const imageMimeType = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp' }[extension];
+        if (imageMimeType) return imageMimeType;
         if (file.type) return file.type;
         return ({
             pdf: 'application/pdf', csv: 'text/csv', xls: 'application/vnd.ms-excel',
@@ -191,7 +193,7 @@
         if (!file || file.size <= 0) throw new Error('Selecione um arquivo válido.');
         if (file.size > 20 * 1024 * 1024) throw new Error('O arquivo deve ter no máximo 20 MB.');
         const extension = file.name.split('.').pop()?.toLowerCase();
-        if (!['pdf', 'csv', 'xls', 'xlsx', 'rar'].includes(extension)) throw new Error('Envie PDF, CSV, XLS, XLSX ou RAR.');
+        if (!['pdf', 'csv', 'xls', 'xlsx', 'rar', 'png', 'jpg', 'jpeg', 'webp'].includes(extension)) throw new Error('Envie PDF, CSV, XLS, XLSX, RAR ou uma foto PNG, JPG ou WEBP.');
         const safeName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
         const storagePath = `escalas/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${safeName}`;
         const mimeType = detectMimeType(file);

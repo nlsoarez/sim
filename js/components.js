@@ -342,7 +342,7 @@ const DocumentsPage = ({ user, documents, uploadStatus, onRequestUpload, onOpen,
                     React.createElement('p', { key: 'subtitle', className: 'text-sm text-gray-500' }, 'Arquivos publicados por perfis Adm para toda a equipe.')
                 ])
             ]),
-            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'icon-action-btn', title: 'Anexar planilha', 'aria-label': 'Anexar planilha' }, React.createElement(ActionIcon, { name: 'Upload', size: 20 }))
+            user.role === 'admin' && React.createElement('button', { key: 'upload', type: 'button', onClick: onRequestUpload, className: 'icon-action-btn', title: 'Anexar documento ou foto', 'aria-label': 'Anexar documento ou foto' }, React.createElement(ActionIcon, { name: 'Upload', size: 20 }))
         ]),
         uploadStatus && React.createElement('p', { key: 'status', className: uploadStatus.type === 'error' ? 'system-alert error' : 'system-alert success' }, uploadStatus.text),
         error && React.createElement('p', { key: 'error', className: 'system-alert error' }, error),

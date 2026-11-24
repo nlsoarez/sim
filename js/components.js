@@ -202,7 +202,8 @@ const ContactsPage = ({ user, contactStore, uploadStatus, onRequestUpload, onBac
         if (normalized === 'zona da mata') return 99;
         return 0;
     };
-    const areaOptions = usesAreaTabs ? Array.from(new Set(sheetContacts.map(contact => contact.area).filter(Boolean)))
+    const areaOptions = usesAreaTabs ? Array.from(new Map(sheetContacts.flatMap(contact => getContactAreas(contact.area))
+        .map(area => [normalizeText(area), area])).values())
         .filter(area => !(['NE', 'NO', 'CO', 'MG'].includes(activeCluster) && normalizeText(area) === normalizeText(activeCluster)))
         .sort((a, b) => areaSortWeight(a) - areaSortWeight(b)) : [];
     React.useEffect(() => {
@@ -239,7 +240,7 @@ const ContactsPage = ({ user, contactStore, uploadStatus, onRequestUpload, onBac
         if (shouldShowAll) return true;
         if (!activeArea) return false;
         if (isAlwaysVisibleContact(activeCluster, contact)) return true;
-        if (normalizedArea && normalizeText(contact.area) === normalizedArea) return true;
+        if (normalizedArea && contactHasArea(contact, activeArea)) return true;
         return false;
     });
     const visibleContacts = baseVisibleContacts;

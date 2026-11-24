@@ -50,11 +50,15 @@ const ensureContactStore = (value) => {
     }
     return makeContactStore(value?.sheets || {}, value?.references || {}, value?.sheetNotes || {});
 };
-const isAlwaysVisibleContact = (cluster, contact) => {
-    const normalizedArea = normalizeText(contact.area);
-    if ((CONTACT_GLOBAL_AREA_RULES[cluster] || []).some(rule => normalizedArea === normalizeText(rule))) return true;
-    return false;
-};
+const getContactAreas = (area) => Array.from(new Map(
+    String(area || '').split(/[|/;,]+/).map(value => value.trim()).filter(Boolean)
+        .map(value => [normalizeText(value), value])
+).values());
+const contactHasArea = (contact, area) => getContactAreas(contact.area)
+    .some(value => normalizeText(value) === normalizeText(area));
+const isAlwaysVisibleContact = (cluster, contact) =>
+    (CONTACT_GLOBAL_AREA_RULES[cluster] || []).some(rule =>
+        normalizeText(contact.area) === normalizeText(rule) || contactHasArea(contact, rule));
 
 
 const normalizeText = (text) => {

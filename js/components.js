@@ -204,7 +204,7 @@ const ContactsPage = ({ user, contactStore, uploadStatus, onRequestUpload, onBac
     };
     const areaOptions = usesAreaTabs ? Array.from(new Map(sheetContacts.flatMap(contact => getContactAreas(contact.area))
         .map(area => [normalizeText(area), area])).values())
-        .filter(area => !(['NE', 'NO', 'CO', 'MG'].includes(activeCluster) && normalizeText(area) === normalizeText(activeCluster)))
+        .filter(area => !(CONTACT_GLOBAL_AREA_RULES[activeCluster] || []).some(rule => normalizeText(area) === normalizeText(rule)))
         .sort((a, b) => areaSortWeight(a) - areaSortWeight(b)) : [];
     React.useEffect(() => {
         if (activeCluster && store.sheets?.[activeCluster]?.length) return;

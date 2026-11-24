@@ -4,11 +4,12 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 let selectedArea = 'PI';
+let selectedCluster = 'NE';
 let hookIndex = 0;
 const context = vm.createContext({
     window: {}, bookmarkData: [],
     React: {
-        useState: () => [[ 'NE', selectedArea, '' ][hookIndex++], () => {}],
+        useState: () => [[ selectedCluster, selectedArea, '' ][hookIndex++], () => {}],
         useEffect: () => {},
         createElement: (type, props, ...children) => ({ type, props, children: children.flat(Infinity) })
     }
@@ -48,4 +49,23 @@ for (selectedArea of ['PI', 'RN', 'PE', 'CE', 'AL', 'PB']) {
     assert.equal(cells.includes('Compartilhado'), ['AL', 'PB'].includes(selectedArea));
     assert.ok(cells.includes('Regional'));
 }
-console.log('OK: abas individuais, filtros por área, separadores e contatos regionais.');
+selectedCluster = 'RJ';
+const rjAreas = ['NOR 1', 'NOR 2', 'NOR 3', 'METROPOLITANA', 'BAIXADA'];
+context.store = { sheets: { RJ: [
+    ...rjAreas.map(area => ({ area, nome: area })),
+    { area: 'RJO', nome: 'Comum RJ' },
+    { area: ' rjo | NOR 2 ', nome: 'Comum combinado' },
+    { area: 'RJOESTE', nome: 'Outra area' }
+] } };
+for (selectedArea of rjAreas) {
+    hookIndex = 0;
+    const elements = nodes(evaluate('ContactsPage({user:{role:"user"},contactStore:store})'));
+    const tabs = elements.filter(n => n.type === 'button' && n.props?.className?.includes('contact-file-tab')).map(n => n.children[0]);
+    assert.deepEqual(tabs, [...rjAreas, 'RJOESTE']);
+    const names = elements.filter(n => n.type === 'td' && n.props?.key === 'nome').flatMap(n => n.children);
+    assert.equal(names.filter(name => name === 'Comum RJ').length, 1);
+    assert.equal(names.filter(name => name === 'Comum combinado').length, 1);
+    assert.ok(!names.includes('Outra area'));
+}
+assert.equal(evaluate('isAlwaysVisibleContact("NE", {area: "RJO"})'), false);
+console.log('OK: abas individuais, filtros por área e RJO comum a todas as subabas de RJ.');

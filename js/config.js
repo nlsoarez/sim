@@ -10,7 +10,8 @@ const CONTACT_GLOBAL_AREA_RULES = {
     NE: ['NE'],
     NO: ['NO'],
     CO: ['CO'],
-    MG: ['MG']
+    MG: ['MG'],
+    RJ: ['RJO']
 };
 const CONTACT_FIELDS = {
     area: ['area', 'área', 'estado', 'regional', 'regiao', 'região'],

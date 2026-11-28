@@ -7,8 +7,7 @@ const bookmarkData = [
             "children": [
                     { "name": "Calendário de divisão de tarefas", "url": "https://nlsoarez.github.io/divisao-equipe-madrugada/", "icon": "Link", "type": "link", "emoji": "📅", "image": "assets/icons/icons8-timeline-week-100.png" },
                     { "name": "Gerador de mensagens", "url": "https://gerador.179-198-124-8.sslip.io/", "icon": "Link", "type": "link", "emoji": "📨", "image": "assets/icons/icons8-chat-bubble-100.png" },
-                    { "name": "Comunicador de falhas", "url": "https://nlsoarez.github.io/comunicador-de-falhas/", "icon": "Link", "type": "link", "emoji": "⚠️", "image": "assets/icons/icons8-error-100.png" },
-                    { "name": "Dashboard de produtividade", "url": "https://dashboard.163-176-155-119.sslip.io/", "icon": "Link", "type": "link", "emoji": "📊", "image": "assets/icons/icons8-combo-chart-100.png" },
+                    { "name": "Dashboard de produtividade", "url": "https://portal-indicadores.179-198-124-8.sslip.io/", "icon": "Link", "type": "link", "emoji": "📊", "image": "assets/icons/icons8-combo-chart-100.png" },
                     { "name": "Dúvidas frequentes", "url": "https://lirapin.github.io/informativos/", "icon": "Link", "type": "link", "emoji": "💡", "image": "assets/icons/icons8-light-on-100.png" }
             ]
     },
@@ -31,14 +30,17 @@ const bookmarkData = [
             "type": "folder",
             "emoji": "🌐",
             "children": [
+                    { "name": "Portal PP", "url": "https://plantao-cop.179-198-124-8.sslip.io/", "icon": "Link", "type": "link", "emoji": "⚠️", "image": "assets/icons/icons8-error-100.png" },
                     { "name": "Portal SCR", "url": "http://10.29.5.216/scr/ui-newsletter.php", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "Portal CTO", "url": "http://10.29.5.216/portal/pages/ui_realtime_detalhamento_fibra.php?submenu=fibra-gpon", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "Portal Claro", "url": "http://portalclarobrasil/", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
                     { "name": "BORA!", "url": "https://bora.claro.com.br/timeline", "icon": "Link", "type": "link", "emoji": "🌐", "image": "assets/icons/icons8-geography-100.png" },
+                    { "name": "HELPTOA", "url": "http://10.70.107.15/botsqlite/?page=login#team-15", "icon": "Link", "type": "link", "emoji": "💡", "image": "assets/icons/icons8-view-100.png", "startNewRow": true },
                     { "name": "Orhganiza", "url": "https://pontodigital.claro.com.br/entrar", "icon": "Link", "type": "link", "emoji": "🔗", "image": "assets/icons/icons8-time-machine-100.png" },
                     { "name": "Rhevolution", "url": "https://portalrh.claro.com.br/ords/rhportal/rhlgweb.show", "icon": "Link", "type": "link", "emoji": "🔗", "image": "assets/icons/icons8-services-100.png" },
                     { "name": "OneDrive", "url": "https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=4765445b-32c6-49b0-83e6-1d93765276ca&redirect_uri=https%3A%2F%2Fm365.cloud.microsoft%2Flandingv2&response_type=code%20id_token&scope=openid%20profile%20https%3A%2F%2Fwww.office.com%2Fv2%2FOfficeHome.All&response_mode=form_post&nonce=639141526875211009&ui_locales=pt-BR&mkt=pt-BR", "icon": "Link", "type": "link", "emoji": "☁", "image": "assets/icons/icons8-microsoft-onedrive-2019-100.png" },
-                    { "name": "Jira Service Desk", "url": "https://clarobr.atlassian.net/servicedesk/customer/user/login?destination=portals", "icon": "Link", "type": "link", "emoji": "🎫", "image": "assets/icons/icons8-ticket-100.png" }
+                    { "name": "Jira Service Desk", "url": "https://clarobr.atlassian.net/servicedesk/customer/user/login?destination=portals", "icon": "Link", "type": "link", "emoji": "🎫", "image": "assets/icons/icons8-ticket-100.png" },
+                    { "name": "Você disse férias?", "url": "https://nlsoarez.github.io/ferias-inteligentes-site/", "icon": "Link", "type": "link", "emoji": "📅", "image": "assets/icons/icons8-timeline-week-100.png" }
             ]
     },
     {

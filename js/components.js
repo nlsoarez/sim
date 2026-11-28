@@ -4,7 +4,7 @@ const AppCard = ({ item, onFolderOpen }) => {
         if (isFolder && onFolderOpen) onFolderOpen(item);
         else if (item.url) window.open(item.url, '_blank', 'noopener,noreferrer');
     };
-    return React.createElement('button', { type: 'button', className: `${isFolder ? 'folder-card' : 'app-card'} fade-in`, onClick: handleClick }, [
+    return React.createElement('button', { type: 'button', className: `${isFolder ? 'folder-card' : 'app-card'} fade-in`, style: item.startNewRow ? { gridColumn: '1' } : undefined, onClick: handleClick }, [
         React.createElement('div', { key: 'icon', className: 'icon-wrapper' }, React.createElement(EmojiComponent, { item })),
         React.createElement('div', { key: 'name', className: 'app-name' }, item.name.length > 35 ? item.name.substring(0, 32) + '...' : item.name)
     ]);
